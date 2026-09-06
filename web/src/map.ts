@@ -25,9 +25,24 @@ const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? '';
 const STYLE =
   import.meta.env.VITE_MAPBOX_STYLE ?? 'mapbox://styles/stiles/cmiuh91nz003q01su2wd5b64l';
 
-// A first view for the moment before the county silhouette arrives, after which the map
-// frames itself from the real geometry.
-const OPENING_VIEW = { center: [-118.29, 34.19] as [number, number], zoom: 8.1 };
+/**
+ * The opening view: metropolitan Los Angeles, not the county's legal extent.
+ *
+ * The San Gabriels across the top, the Ventura county line and Point Mugu on the west,
+ * Chino Hills and the Orange County beaches on the east and south. It is where nearly
+ * everyone who opens this lives, and it is where the interesting gradient is: forty
+ * degrees between the beach and the valley on a September afternoon.
+ *
+ * What it leaves out is deliberate. The county reaches to the Antelope Valley and out to
+ * San Clemente Island, and framing all of that makes the basin a smear across the middle
+ * of a tall, mostly empty map. Lancaster, Palmdale, Acton and Avalon are all still in the
+ * place index and still searchable; the map pans to a selection that starts off screen,
+ * and the reset control brings this view back.
+ */
+const LA_VIEW: [[number, number], [number, number]] = [
+  [-119.15, 33.61],
+  [-117.52, 34.48],
+];
 
 // Read from the style at build time and overridden here rather than in Studio, because
 // these are this product's needs rather than the style's defaults.
@@ -76,8 +91,11 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
     // mercator: flat, predictable under fitBounds, and matching the projection the
     // contours were generated for.
     projection: 'mercator',
-    center: OPENING_VIEW.center,
-    zoom: OPENING_VIEW.zoom,
+    // Framed from the constant above rather than from the county geometry, so the first
+    // paint is already the right view instead of a guessed center that jumps when
+    // county.geojson lands.
+    bounds: LA_VIEW,
+    fitBoundsOptions: { padding: 0 },
     minZoom: 7.4,
     // The grid is 2.5 km. Past this the reader is zooming into a band edge that is an
     // interpolation, not a boundary anyone could stand on.
@@ -111,7 +129,6 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
   const applied: { frame?: unknown; outlines?: unknown; county?: unknown; filters?: string } = {};
   let basemap = withBasemap;
   let installed = false;
-  let framed = false;
   let fellBack = false;
 
   /** Add our sources and layers to whichever style is loaded. */
@@ -197,6 +214,28 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
   });
 
   const labels = createLabels(container, map, bundle, () => basemap);
+  const reset = createReset(container, map);
+
+  /**
+   * Bring a selection into view if the LA frame does not contain it.
+   *
+   * The Antelope Valley and Catalina are outside the opening view but inside the place
+   * index, so a reader who searches Lancaster would otherwise get a highlighted outline
+   * they cannot see and a map that looks broken. Panning keeps the current zoom: the
+   * question is where, not how close.
+   */
+  function reveal(point: { longitude: number; latitude: number }): void {
+    const screen = map.project([point.longitude, point.latitude]);
+    const margin = 48;
+    const outside =
+      screen.x < margin ||
+      screen.y < margin ||
+      screen.x > container.clientWidth - margin ||
+      screen.y > container.clientHeight - margin;
+    if (!outside) return;
+    map.easeTo({ center: [point.longitude, point.latitude], duration: 600 });
+    reset.offer();
+  }
 
   return {
     showFrame(frame) {
@@ -210,22 +249,15 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
     showCounty(collection) {
       wanted.county = collection;
       flush();
-      // Frame the county from its own geometry rather than a zoom chosen by eye, so a
-      // phone, a tablet and a desktop all open on the whole county. The Channel Islands
-      // are in the boundary and would pull the frame far south, so the bounds come from
-      // the mainland part.
-      const bounds = mainlandBounds(collection);
-      if (bounds && !framed) {
-        framed = true;
-        map.fitBounds(bounds, { padding: 12, animate: false, maxZoom: 10 });
-      }
       labels.place();
     },
     highlight(selection, comparison) {
       wanted.selected = selection?.slug ?? '';
       wanted.comparison = comparison ?? '';
       flush();
-      labels.select(selection ? mark(bundle, selection) : null);
+      const point = selection ? mark(bundle, selection) : null;
+      labels.select(point);
+      if (point) reveal(point);
     },
     resize() {
       map.resize();
@@ -473,44 +505,33 @@ function rendered(map: MapboxMap, layer: string): number {
 }
 
 /**
- * Bounds of the largest ring, which is the mainland county.
+ * A way back to the LA frame, shown only once the map has left it.
  *
- * Including Catalina and San Clemente would push the frame roughly 60 miles south and
- * leave the basin, where most readers are, in the top third of the map.
+ * A reader who pans to Palmdale, or who was taken there by a search, has no other way to
+ * recover the view they started with, and a control that is always there is one more
+ * thing to read on a phone.
  */
-function mainlandBounds(
-  collection: GeoJSON.FeatureCollection,
-): [[number, number], [number, number]] | null {
-  const geometry = collection.features[0]?.geometry;
-  if (!geometry) return null;
-  const polygons =
-    geometry.type === 'MultiPolygon'
-      ? geometry.coordinates
-      : geometry.type === 'Polygon'
-        ? [geometry.coordinates]
-        : [];
-  let best: GeoJSON.Position[] | null = null;
-  for (const polygon of polygons) {
-    const ring = polygon[0];
-    if (ring && (!best || ring.length > best.length)) best = ring;
-  }
-  if (!best) return null;
+function createReset(container: HTMLElement, map: MapboxMap) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'map-reset';
+  button.textContent = 'Reset map';
+  button.hidden = true;
+  button.addEventListener('click', () => {
+    map.fitBounds(LA_VIEW, { padding: 0, duration: 600 });
+    button.hidden = true;
+  });
+  container.append(button);
 
-  let west = 180;
-  let south = 90;
-  let east = -180;
-  let north = -90;
-  for (const point of best) {
-    const [longitude, latitude] = point as [number, number];
-    west = Math.min(west, longitude);
-    east = Math.max(east, longitude);
-    south = Math.min(south, latitude);
-    north = Math.max(north, latitude);
+  // A drag or a zoom by the reader also earns the button. `moveend` fires for our own
+  // eased moves too, so the offer is idempotent.
+  map.on('dragend', () => offer());
+  map.on('zoomend', () => offer());
+
+  function offer(): void {
+    button.hidden = false;
   }
-  return [
-    [west, south],
-    [east, north],
-  ];
+  return { offer };
 }
 
 function overlaps(a: DOMRect, b: DOMRect): boolean {

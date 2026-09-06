@@ -49,6 +49,24 @@ kept, so the protection that matters is a URL restriction on the token in the Ma
 account rather than secrecy. With `VITE_MAPBOX_TOKEN` empty the app takes the fallback
 path deliberately, which is how a contributor without a token gets a working map.
 
+**The map opens on metropolitan LA, not on the county.** The San Gabriels across the top,
+the Ventura county line on the west, Chino Hills and the Orange County beaches on the east
+and south. The county's legal extent reaches the Antelope Valley and out to San Clemente
+Island, and framing all of it makes the basin a smear across the middle of a tall, mostly
+empty map. This view is where nearly every reader is, and it is where the gradient is:
+forty degrees between the beach and the valley on a September afternoon.
+
+The consequence has to be handled rather than accepted. Lancaster, Palmdale, Acton and
+Avalon are in the place index and searchable, so a reader can select a place the opening
+view does not contain, and a highlighted outline they cannot see is a map that looks
+broken. So the map pans to a selection that falls outside the frame, keeping its zoom —
+the question is where, not how close — and a reset control appears to bring LA back. A
+smoke check searches Lancaster by keyboard and asserts the map went and got it.
+
+Framing from a constant rather than from the county geometry also means the first paint is
+already the right view, instead of a guessed center that jumps when `county.geojson`
+lands.
+
 **Labels are HTML, not a symbol layer.** The selected place is always labeled by us, in
 the page's own webfont: it is the one name the reader is hunting for, and no basemap knows
 which place is selected. The curated context labels only appear when there is no basemap
@@ -124,8 +142,9 @@ daylight-saving change, and search ranking.
 
 `make web-smoke` drives the built bundle in the installed Chrome against the real published
 build. It checks a phone and a desktop viewport, a direct place link with a comparison in
-the query, an unknown slug, keyboard-only search, arrow keys on the slider, a run with
-every Mapbox request aborted, and a run with WebGL disabled. It asks the map what it
+the query, an unknown slug, keyboard-only search, a place outside the opening frame, arrow
+keys on the slider, a run with every Mapbox request aborted, and a run with WebGL
+disabled. It asks the map what it
 actually drew rather than trusting that it did, through a `window.feelslike` handle that
 is also useful in the console.
 

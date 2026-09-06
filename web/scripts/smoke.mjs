@@ -412,6 +412,37 @@ async function keyboard(browser, origin) {
   );
   notes.push('keyboard search reached Lancaster');
 
+  // Lancaster is in the Antelope Valley, outside the opening LA frame. The map has to go
+  // and get it, or the reader is told about a highlighted outline they cannot see.
+  const reached = await page
+    .waitForFunction(
+      () => {
+        const { bundle, map } = window.feelslike;
+        const [longitude, latitude] = bundle.placeCells.places.lancaster.reference_point;
+        return map.bandAt(longitude, latitude) !== null;
+      },
+      { timeout: 10000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  check(reached, 'selecting Lancaster left it outside the map view');
+  check(await page.$('.map-reset:not([hidden])'), 'no way back to the LA view after panning');
+
+  await page.click('.map-reset');
+  const home = await page
+    .waitForFunction(
+      () => {
+        const { bundle, map } = window.feelslike;
+        const [longitude, latitude] = bundle.placeCells.places.downtown.reference_point;
+        return map.bandAt(longitude, latitude) !== null;
+      },
+      { timeout: 10000 },
+    )
+    .then(() => true)
+    .catch(() => false);
+  check(home, 'reset did not return to the LA view');
+  notes.push('map panned to Lancaster and reset back to LA');
+
   // The slider moves with arrow keys.
   await page.focus('#hour');
   const start = await page.$eval('#hour', (input) => input.value);

@@ -78,10 +78,16 @@ polygon, which the map uses for the coastline and for the no-data fill beneath t
 per temperature class, including both open-ended ones, so the map fills and the legend are
 built from the same values and cannot drift apart. Validation checks more than presence:
 every class the frames actually draw must have a color, and the no-data gray must sit at
-least 8 units of CIE76 distance from every band. That threshold was calibrated against a
-real mistake in this repo, an `#e5e5e4` gray beside a `#dfe9e4` mild band, 4.2 apart and
-indistinguishable on a phone. Adding a hotter class means appending a color, never
-recoloring an existing one.
+least 8 units of CIE76 distance from every band, as must any two adjacent classes. That
+threshold was calibrated against a real mistake in this repo, an `#e5e5e4` gray beside a
+`#dfe9e4` mild band, 4.2 apart and indistinguishable on a phone.
+
+The palette is ColorBrewer Spectral reversed, resampled from its 11 stops to 14 classes.
+The adjacency check earned its keep here: sampling Spectral at evenly spaced indexes put
+two classes 7.3 apart, because the curve barely moves through its pale middle. Resampling
+by distance along the curve instead lifts the closest pair to 16.4 and still lands on
+Spectral's endpoints and its `#ffffbf` midpoint. Being a diverging ramp, it is anchored at
+both ends, so adding a hotter class means recoloring rather than appending.
 
 ## Cell ids
 

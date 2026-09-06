@@ -42,33 +42,43 @@ outline_simplify_degrees = 0.0005
 # list is always one longer than band_breaks_f. Published in the manifest and read by
 # the interface, which keeps the legend and the fills from drifting apart.
 #
-# Cool blues below the mild middle, warm oranges and reds above it. Temperature has no
-# good or bad direction, so the ramp is a neutral cool-to-warm pair rather than a
-# valenced one. Adding a hotter class means appending a color, never recoloring an
-# existing one: a reader who learns that dark orange means the mid-90s should not have
-# that change under them in a hotter week.
+# ColorBrewer Spectral, reversed so cold is violet and hot is crimson, resampled from
+# its 11 stops to these 14 classes.
+#
+# Resampled by perceptual arc length rather than by evenly spaced index. Spectral's
+# curve barely moves through its pale middle, so an evenly indexed sample put two
+# classes 7.3 apart in Lab, under the 8.0 a reader can separate on a phone in daylight.
+# Spacing the samples by distance along the curve instead lifts the closest pair to 16.4
+# and still lands exactly on Spectral's endpoints and its #ffffbf midpoint.
+#
+# Two properties this palette does not have, both worth knowing before editing it.
+# It is not monotonic in lightness: the coldest class and the hottest are within six
+# points of L*, so lightness alone does not tell a reader which end they are at, and hue
+# is carrying the scale. And it is anchored at both ends, so adding a hotter class means
+# recoloring rather than appending, unlike an open-ended sequential ramp.
 band_colors = [
-  "#3f6fa8",  # below 50
-  "#6592c1",  # 50 to 55
-  "#92b4d3",  # 55 to 60
-  "#bfd6e6",  # 60 to 65
-  "#e4eef2",  # 65 to 70
-  "#fdf2c9",  # 70 to 75
-  "#fbdf9b",  # 75 to 80
-  "#f8c86e",  # 80 to 85
-  "#f4a94d",  # 85 to 90
-  "#ef8839",  # 90 to 95
-  "#e2652c",  # 95 to 100
-  "#cd4322",  # 100 to 105
-  "#ad2419",  # 105 to 110
-  "#7f1015",  # 110 and above
+  "#5e4fa2",  # below 50
+  "#4b73b3",  # 50 to 55
+  "#4192b9",  # 55 to 60
+  "#5aaeae",  # 60 to 65
+  "#7dcaa5",  # 65 to 70
+  "#b7e2a2",  # 70 to 75
+  "#e5f598",  # 75 to 80
+  "#ffffbf",  # 80 to 85
+  "#fee18d",  # 85 to 90
+  "#feb869",  # 90 to 95
+  "#f98d51",  # 95 to 100
+  "#eb6047",  # 100 to 105
+  "#ce394e",  # 105 to 110
+  "#9e0142",  # 110 and above
 ]
 # Cells with no forecast take this gray and never a band color.
 #
-# A mid gray rather than a light one, deliberately. Every band is either tinted or
-# saturated, so a neutral at this lightness cannot be mistaken for one. An earlier
-# #e5e5e4 sat a hair from the 65-to-70 band, which would have drawn missing data as a
-# mild afternoon.
+# A mid gray rather than a light one, deliberately, and it matters more against Spectral
+# than it did against a cool-to-warm ramp: the 80-to-85 class is #ffffbf, so a pale gray
+# would put missing data a few points of Lab from the most common LA afternoon. This one
+# is 28 from the nearest band. An earlier #e5e5e4 measured 4.2 from a mild band, which is
+# indistinguishable on a phone in daylight, and validation now refuses anything under 8.
 no_data_color = "#b9b9b9"
 
 # Map labels, in the order they win a collision. Deliberately short: the map is carrying

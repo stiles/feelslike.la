@@ -445,6 +445,25 @@ a {
   background: #1a1a1a;
 }
 
+.map-reset {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 9px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  font: inherit;
+  font-size: 12px;
+  color: #262626;
+  cursor: pointer;
+}
+
+.map-reset:hover {
+  background: #f4f4f4;
+}
+
 /* Mapbox's controls, quieter. The attribution and logo stay: they are a condition of
    using the tiles. */
 #map-shell .mapboxgl-ctrl-attrib,

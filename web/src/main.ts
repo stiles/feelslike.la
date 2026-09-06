@@ -182,7 +182,8 @@ async function attachMap(bundle: Bundle): Promise<MapView | null> {
     createLegend(document.querySelector('#legend') as HTMLElement, bundle);
     container.setAttribute(
       'aria-label',
-      'Map of apparent temperature across Los Angeles County at the selected hour.',
+      'Map of apparent temperature across metropolitan Los Angeles at the selected hour. ' +
+        'It pans to a selected place outside this view.',
     );
     window.addEventListener('resize', () => view.resize());
     return view;
