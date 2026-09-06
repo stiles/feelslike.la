@@ -1,0 +1,47 @@
+# NDFD source configuration.
+#
+# Paths verified against the NOAA Open Data Dissemination bucket on Sept. 6, 2026:
+#   aws s3 ls --no-sign-request s3://noaa-ndfd-pds/opnl/AR.conus/VP.001-003/
+# The VP.001-003 window carries days one through three, which is where the hourly
+# apparent-temperature forecasts live. Later windows step to coarser intervals.
+
+[source]
+provider = "NWS NDFD"
+bucket = "noaa-ndfd-pds"
+base_url = "https://noaa-ndfd-pds.s3.amazonaws.com"
+sector = "AR.conus"
+period = "VP.001-003"
+
+[source.elements]
+apparent_temperature = "ds.apt.bin"
+temperature = "ds.temp.bin"
+
+[download]
+timeout_seconds = 60
+max_attempts = 4
+backoff_seconds = 2.0
+
+[forecast]
+timezone = "America/Los_Angeles"
+temperature_unit = "degF"
+horizon_hours = 24
+# Fixed, ascending display breaks in Fahrenheit. Interior thresholds only:
+# isobands closes the outer bands at the field extrema.
+band_breaks_f = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110]
+
+[display]
+# Simplification tolerance in degrees for the clip mask, roughly 55 m at this latitude.
+# Applies to the coastline drawn around the bands, not to any temperature value.
+clip_simplify_degrees = 0.0005
+# Output coordinate decimals. Four is about 11 m, finer than a 2.5 km forecast cell.
+coordinate_precision = 4
+
+# Crop envelope for Los Angeles County plus a buffer of several native cells.
+# Deliberately wider than the la-geography lookup's -119.0/-117.6, 33.7/34.8 box,
+# which clips the northwest county line and the Channel Islands.
+[coverage]
+min_longitude = -118.95
+max_longitude = -117.55
+min_latitude = 32.75
+max_latitude = 34.90
+buffer_cells = 4

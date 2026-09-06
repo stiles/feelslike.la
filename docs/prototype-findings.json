@@ -1,0 +1,831 @@
+{
+  "generated_at": "2026-09-06T19:55:52.231308Z",
+  "build_id": "20260906T194025Z",
+  "source": {
+    "provider": "NWS NDFD",
+    "sector": "AR.conus",
+    "period": "VP.001-003",
+    "files": [
+      {
+        "element": "apparent_temperature",
+        "url": "https://noaa-ndfd-pds.s3.amazonaws.com/opnl/AR.conus/VP.001-003/ds.apt.bin",
+        "bytes": 44590256,
+        "sha256": "2740148d172fad529a25848f28137fd995bfc150c9af5a9dd5ea75fbf0b39122",
+        "retrieved_at": "2026-09-06T19:40:25.688006Z",
+        "last_modified": "Sun, 06 Sep 2026 19:22:44 GMT"
+      },
+      {
+        "element": "temperature",
+        "url": "https://noaa-ndfd-pds.s3.amazonaws.com/opnl/AR.conus/VP.001-003/ds.temp.bin",
+        "bytes": 43636356,
+        "sha256": "2b8598fdb4b179a00f37b1e1a35f1cdeca399920938acee7cce6b3dabab57b22",
+        "retrieved_at": "2026-09-06T19:40:27.654976Z",
+        "last_modified": "Sun, 06 Sep 2026 19:22:45 GMT"
+      }
+    ]
+  },
+  "grid": {
+    "fingerprint": "sha256:74f909fb1200dcbfb93cb34e1d82cbf0",
+    "width": 2145,
+    "height": 1377,
+    "pixel_size_m": [
+      2539.703,
+      2539.703
+    ],
+    "declared_units": [
+      "degC"
+    ],
+    "band_count": 42,
+    "reference_times": [
+      "2026-09-06T19:30:00Z"
+    ],
+    "cropped_shape": [
+      24,
+      111,
+      76
+    ],
+    "nodata_cells_first_frame": 580,
+    "finite_cells_first_frame": 7856
+  },
+  "time_window": {
+    "requested_hours": 24,
+    "complete": true,
+    "note": "24 consecutive hourly valid times",
+    "first_valid_time": "2026-09-06T20:00:00Z",
+    "last_valid_time": "2026-09-07T19:00:00Z",
+    "first_local_label": "Sun 1 pm PDT",
+    "source_age_at_download_minutes": 10
+  },
+  "geography": {
+    "place_count": 270,
+    "duplicate_slugs": [],
+    "invalid_geometries": 0,
+    "bounds": [
+      -118.944904,
+      33.299076,
+      -117.646374,
+      34.82315
+    ],
+    "types": {
+      "segment-of-a-city": 114,
+      "standalone-city": 87,
+      "unincorporated-area": 69
+    }
+  },
+  "places": {
+    "del-rey": {
+      "cell_id": "r803c231",
+      "row": 803,
+      "col": 231,
+      "window_row": 47,
+      "window_col": 33,
+      "center_longitude": -118.424199,
+      "center_latitude": 33.981838,
+      "inside_window": true,
+      "reference_longitude": -118.421955,
+      "reference_latitude": 33.989153,
+      "reference_method": "polylabel_largest_part",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.52
+    },
+    "santa-monica": {
+      "cell_id": "r801c229",
+      "row": 801,
+      "col": 229,
+      "window_row": 45,
+      "window_col": 31,
+      "center_longitude": -118.487155,
+      "center_latitude": 34.018503,
+      "inside_window": true,
+      "reference_longitude": -118.479223,
+      "reference_latitude": 34.021324,
+      "reference_method": "polylabel_largest_part",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.49
+    },
+    "downtown": {
+      "cell_id": "r801c238",
+      "row": 801,
+      "col": 238,
+      "window_row": 45,
+      "window_col": 40,
+      "center_longitude": -118.245894,
+      "center_latitude": 34.053307,
+      "inside_window": true,
+      "reference_longitude": -118.246684,
+      "reference_latitude": 34.041772,
+      "reference_method": "polylabel_largest_part",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.8
+    },
+    "pasadena": {
+      "cell_id": "r798c242",
+      "row": 798,
+      "col": 242,
+      "window_row": 42,
+      "window_col": 44,
+      "center_longitude": -118.152495,
+      "center_latitude": 34.135309,
+      "inside_window": true,
+      "reference_longitude": -118.1445,
+      "reference_latitude": 34.1478,
+      "reference_method": "manual_override",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.98
+    },
+    "woodland-hills": {
+      "cell_id": "r794c226",
+      "row": 794,
+      "col": 226,
+      "window_row": 38,
+      "window_col": 28,
+      "center_longitude": -118.600524,
+      "center_latitude": 34.162257,
+      "inside_window": true,
+      "reference_longitude": -118.589914,
+      "reference_latitude": 34.164858,
+      "reference_method": "polylabel_largest_part",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.63
+    },
+    "lancaster": {
+      "cell_id": "r774c247",
+      "row": 774,
+      "col": 247,
+      "window_row": 18,
+      "window_col": 49,
+      "center_longitude": -118.129271,
+      "center_latitude": 34.687147,
+      "inside_window": true,
+      "reference_longitude": -118.137,
+      "reference_latitude": 34.6868,
+      "reference_method": "manual_override",
+      "reviewed": true,
+      "distance_to_cell_center_mi": 0.44
+    }
+  },
+  "distinct_cells": 6,
+  "series_summary": [
+    {
+      "slug": "del-rey",
+      "name": "Del Rey",
+      "minimum_f": 65.03,
+      "maximum_f": 88.07,
+      "mean_air_f": 72.97,
+      "range_f": 23.04
+    },
+    {
+      "slug": "santa-monica",
+      "name": "Santa Monica",
+      "minimum_f": 67.01,
+      "maximum_f": 79.07,
+      "mean_air_f": 73.32,
+      "range_f": 12.06
+    },
+    {
+      "slug": "downtown",
+      "name": "Downtown",
+      "minimum_f": 65.93,
+      "maximum_f": 94.55,
+      "mean_air_f": 75.37,
+      "range_f": 28.62
+    },
+    {
+      "slug": "pasadena",
+      "name": "Pasadena",
+      "minimum_f": 61.97,
+      "maximum_f": 94.55,
+      "mean_air_f": 73.72,
+      "range_f": 32.58
+    },
+    {
+      "slug": "woodland-hills",
+      "name": "Woodland Hills",
+      "minimum_f": 67.91,
+      "maximum_f": 94.91,
+      "mean_air_f": 74.8,
+      "range_f": 27.0
+    },
+    {
+      "slug": "lancaster",
+      "name": "Lancaster",
+      "minimum_f": 65.03,
+      "maximum_f": 85.01,
+      "mean_air_f": 73.37,
+      "range_f": 19.98
+    }
+  ],
+  "spread_at_peak_hour_f": {
+    "valid_time": "2026-09-07T19:00:00Z",
+    "local_label": "Mon 12 pm PDT",
+    "warmest": "Woodland Hills",
+    "warmest_f": 94.91,
+    "coolest_f": 79.07
+  },
+  "apparent_minus_air_f": {
+    "minimum": -0.9,
+    "maximum": 9.9,
+    "share_within_half_degree": 0.875
+  },
+  "county_spread_by_hour": [
+    {
+      "valid_time": "2026-09-06T20:00:00Z",
+      "local_label": "Sun 1 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 50.99,
+      "maximum_f": 86.81,
+      "spread_f": 35.82,
+      "classes_at_5f": 8,
+      "classes_at_2f": 18
+    },
+    {
+      "valid_time": "2026-09-06T21:00:00Z",
+      "local_label": "Sun 2 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 45.59,
+      "maximum_f": 87.71,
+      "spread_f": 42.12,
+      "classes_at_5f": 9,
+      "classes_at_2f": 18
+    },
+    {
+      "valid_time": "2026-09-06T22:00:00Z",
+      "local_label": "Sun 3 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 50.99,
+      "maximum_f": 85.19,
+      "spread_f": 34.2,
+      "classes_at_5f": 8,
+      "classes_at_2f": 17
+    },
+    {
+      "valid_time": "2026-09-06T23:00:00Z",
+      "local_label": "Sun 4 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 52.07,
+      "maximum_f": 95.99,
+      "spread_f": 43.92,
+      "classes_at_5f": 10,
+      "classes_at_2f": 22
+    },
+    {
+      "valid_time": "2026-09-07T00:00:00Z",
+      "local_label": "Sun 5 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 52.97,
+      "maximum_f": 95.99,
+      "spread_f": 43.02,
+      "classes_at_5f": 10,
+      "classes_at_2f": 22
+    },
+    {
+      "valid_time": "2026-09-07T01:00:00Z",
+      "local_label": "Sun 6 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 54.95,
+      "maximum_f": 94.91,
+      "spread_f": 39.96,
+      "classes_at_5f": 9,
+      "classes_at_2f": 21
+    },
+    {
+      "valid_time": "2026-09-07T02:00:00Z",
+      "local_label": "Sun 7 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 52.07,
+      "maximum_f": 95.99,
+      "spread_f": 43.92,
+      "classes_at_5f": 10,
+      "classes_at_2f": 21
+    },
+    {
+      "valid_time": "2026-09-07T03:00:00Z",
+      "local_label": "Sun 8 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 52.07,
+      "maximum_f": 98.33,
+      "spread_f": 46.26,
+      "classes_at_5f": 9,
+      "classes_at_2f": 21
+    },
+    {
+      "valid_time": "2026-09-07T04:00:00Z",
+      "local_label": "Sun 9 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 52.07,
+      "maximum_f": 95.99,
+      "spread_f": 43.92,
+      "classes_at_5f": 9,
+      "classes_at_2f": 20
+    },
+    {
+      "valid_time": "2026-09-07T05:00:00Z",
+      "local_label": "Sun 10 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 50.99,
+      "maximum_f": 86.81,
+      "spread_f": 35.82,
+      "classes_at_5f": 7,
+      "classes_at_2f": 16
+    },
+    {
+      "valid_time": "2026-09-07T06:00:00Z",
+      "local_label": "Sun 11 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 45.59,
+      "maximum_f": 86.81,
+      "spread_f": 41.22,
+      "classes_at_5f": 8,
+      "classes_at_2f": 16
+    },
+    {
+      "valid_time": "2026-09-07T07:00:00Z",
+      "local_label": "Mon 12 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 50.99,
+      "maximum_f": 77.99,
+      "spread_f": 27.0,
+      "classes_at_5f": 6,
+      "classes_at_2f": 14
+    },
+    {
+      "valid_time": "2026-09-07T08:00:00Z",
+      "local_label": "Mon 1 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 45.59,
+      "maximum_f": 76.91,
+      "spread_f": 31.32,
+      "classes_at_5f": 7,
+      "classes_at_2f": 14
+    },
+    {
+      "valid_time": "2026-09-07T09:00:00Z",
+      "local_label": "Mon 2 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 43.97,
+      "maximum_f": 79.97,
+      "spread_f": 36.0,
+      "classes_at_5f": 7,
+      "classes_at_2f": 16
+    },
+    {
+      "valid_time": "2026-09-07T10:00:00Z",
+      "local_label": "Mon 3 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 45.23,
+      "maximum_f": 79.97,
+      "spread_f": 34.74,
+      "classes_at_5f": 7,
+      "classes_at_2f": 15
+    },
+    {
+      "valid_time": "2026-09-07T11:00:00Z",
+      "local_label": "Mon 4 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 45.23,
+      "maximum_f": 76.91,
+      "spread_f": 31.68,
+      "classes_at_5f": 7,
+      "classes_at_2f": 14
+    },
+    {
+      "valid_time": "2026-09-07T12:00:00Z",
+      "local_label": "Mon 5 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 43.61,
+      "maximum_f": 76.91,
+      "spread_f": 33.3,
+      "classes_at_5f": 7,
+      "classes_at_2f": 15
+    },
+    {
+      "valid_time": "2026-09-07T13:00:00Z",
+      "local_label": "Mon 6 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 44.87,
+      "maximum_f": 76.91,
+      "spread_f": 32.04,
+      "classes_at_5f": 7,
+      "classes_at_2f": 14
+    },
+    {
+      "valid_time": "2026-09-07T14:00:00Z",
+      "local_label": "Mon 7 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 50.99,
+      "maximum_f": 77.99,
+      "spread_f": 27.0,
+      "classes_at_5f": 6,
+      "classes_at_2f": 14
+    },
+    {
+      "valid_time": "2026-09-07T15:00:00Z",
+      "local_label": "Mon 8 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 54.95,
+      "maximum_f": 85.37,
+      "spread_f": 30.42,
+      "classes_at_5f": 8,
+      "classes_at_2f": 15
+    },
+    {
+      "valid_time": "2026-09-07T16:00:00Z",
+      "local_label": "Mon 9 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 58.01,
+      "maximum_f": 92.03,
+      "spread_f": 34.02,
+      "classes_at_5f": 8,
+      "classes_at_2f": 16
+    },
+    {
+      "valid_time": "2026-09-07T17:00:00Z",
+      "local_label": "Mon 10 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 59.99,
+      "maximum_f": 103.01,
+      "spread_f": 43.02,
+      "classes_at_5f": 9,
+      "classes_at_2f": 19
+    },
+    {
+      "valid_time": "2026-09-07T18:00:00Z",
+      "local_label": "Mon 11 am PDT",
+      "county_cells": 1691,
+      "minimum_f": 59.99,
+      "maximum_f": 101.57,
+      "spread_f": 41.58,
+      "classes_at_5f": 10,
+      "classes_at_2f": 21
+    },
+    {
+      "valid_time": "2026-09-07T19:00:00Z",
+      "local_label": "Mon 12 pm PDT",
+      "county_cells": 1691,
+      "minimum_f": 61.97,
+      "maximum_f": 103.19,
+      "spread_f": 41.22,
+      "classes_at_5f": 9,
+      "classes_at_2f": 22
+    }
+  ],
+  "contours": {
+    "valid_time": "2026-09-07T19:00:00Z",
+    "band_breaks_f": [
+      50.0,
+      55.0,
+      60.0,
+      65.0,
+      70.0,
+      75.0,
+      80.0,
+      85.0,
+      90.0,
+      95.0,
+      100.0,
+      105.0,
+      110.0
+    ],
+    "feature_count": 9,
+    "band_ids": [
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "field_min_f": 58.91,
+    "field_max_f": 103.19,
+    "simplified_mask_bytes": 110654,
+    "simplified_mask_gzip_bytes": 24359,
+    "simplified_mask_vertices": 5452,
+    "full_coastline_bytes": 2545410,
+    "full_coastline_vertices": 71066,
+    "place_agreement": [
+      {
+        "slug": "del-rey",
+        "cell_value_f": 88.07,
+        "band_id": 8,
+        "band_lower_f": 85.0,
+        "band_upper_f": 90.0,
+        "cell_value_inside_band": true
+      },
+      {
+        "slug": "santa-monica",
+        "cell_value_f": 79.07,
+        "band_id": 7,
+        "band_lower_f": 80.0,
+        "band_upper_f": 85.0,
+        "cell_value_inside_band": false
+      },
+      {
+        "slug": "downtown",
+        "cell_value_f": 94.55,
+        "band_id": 9,
+        "band_lower_f": 90.0,
+        "band_upper_f": 95.0,
+        "cell_value_inside_band": true
+      },
+      {
+        "slug": "pasadena",
+        "cell_value_f": 94.55,
+        "band_id": 9,
+        "band_lower_f": 90.0,
+        "band_upper_f": 95.0,
+        "cell_value_inside_band": true
+      },
+      {
+        "slug": "woodland-hills",
+        "cell_value_f": 94.91,
+        "band_id": 10,
+        "band_lower_f": 95.0,
+        "band_upper_f": 100.0,
+        "cell_value_inside_band": false
+      },
+      {
+        "slug": "lancaster",
+        "cell_value_f": 85.01,
+        "band_id": 8,
+        "band_lower_f": 85.0,
+        "band_upper_f": 90.0,
+        "cell_value_inside_band": true
+      }
+    ]
+  },
+  "api_spot_check": [
+    {
+      "slug": "del-rey",
+      "grid_id": "LOX",
+      "grid_x": 148,
+      "grid_y": 43,
+      "api_update_time": "2026-09-06T18:26:45+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 65.03,
+          "api_f": 65.0,
+          "difference_f": 0.03
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 70.07,
+          "api_f": 70.0,
+          "difference_f": 0.07
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 70.97,
+          "api_f": 71.0,
+          "difference_f": -0.03
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 76.01,
+          "api_f": 76.0,
+          "difference_f": 0.01
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 76.91,
+          "api_f": 77.0,
+          "difference_f": -0.09
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 76.91,
+          "api_f": 77.0,
+          "difference_f": -0.09
+        }
+      ]
+    },
+    {
+      "slug": "santa-monica",
+      "grid_id": "LOX",
+      "grid_x": 146,
+      "grid_y": 45,
+      "api_update_time": "2026-09-06T18:26:45+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 67.01,
+          "api_f": 67.0,
+          "difference_f": 0.01
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 67.91,
+          "api_f": 68.0,
+          "difference_f": -0.09
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 72.05,
+          "api_f": 72.0,
+          "difference_f": 0.05
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 72.95,
+          "api_f": 73.0,
+          "difference_f": -0.05
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 76.01,
+          "api_f": 76.0,
+          "difference_f": 0.01
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 76.01,
+          "api_f": 76.0,
+          "difference_f": 0.01
+        }
+      ]
+    },
+    {
+      "slug": "downtown",
+      "grid_id": "LOX",
+      "grid_x": 155,
+      "grid_y": 44,
+      "api_update_time": "2026-09-06T18:26:45+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 65.93,
+          "api_f": 67.0,
+          "difference_f": -1.07
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 67.91,
+          "api_f": 69.0,
+          "difference_f": -1.09
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 67.91,
+          "api_f": 71.0,
+          "difference_f": -3.09
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 74.93,
+          "api_f": 76.0,
+          "difference_f": -1.07
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 89.33,
+          "api_f": 89.0,
+          "difference_f": 0.33
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 89.33,
+          "api_f": 89.0,
+          "difference_f": 0.33
+        }
+      ]
+    },
+    {
+      "slug": "pasadena",
+      "grid_id": "LOX",
+      "grid_x": 159,
+      "grid_y": 48,
+      "api_update_time": "2026-09-06T18:26:45+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 61.97,
+          "api_f": 62.0,
+          "difference_f": -0.03
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 63.05,
+          "api_f": 63.0,
+          "difference_f": 0.05
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 65.03,
+          "api_f": 65.0,
+          "difference_f": 0.03
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 74.03,
+          "api_f": 74.0,
+          "difference_f": 0.03
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 92.93,
+          "api_f": 93.0,
+          "difference_f": -0.07
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 92.03,
+          "api_f": 92.0,
+          "difference_f": 0.03
+        }
+      ]
+    },
+    {
+      "slug": "woodland-hills",
+      "grid_id": "LOX",
+      "grid_x": 143,
+      "grid_y": 52,
+      "api_update_time": "2026-09-06T19:52:11+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 68.99,
+          "api_f": 69.0,
+          "difference_f": -0.01
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 72.95,
+          "api_f": 73.0,
+          "difference_f": -0.05
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 72.95,
+          "api_f": 73.0,
+          "difference_f": -0.05
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 76.91,
+          "api_f": 77.0,
+          "difference_f": -0.09
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 81.77,
+          "api_f": 82.0,
+          "difference_f": -0.23
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 86.81,
+          "api_f": 87.0,
+          "difference_f": -0.19
+        }
+      ]
+    },
+    {
+      "slug": "lancaster",
+      "grid_id": "LOX",
+      "grid_x": 164,
+      "grid_y": 72,
+      "api_update_time": "2026-09-06T18:26:45+00:00",
+      "comparisons": [
+        {
+          "valid_time": "2026-09-06T20:00:00Z",
+          "grib_f": 74.93,
+          "api_f": 75.0,
+          "difference_f": -0.07
+        },
+        {
+          "valid_time": "2026-09-06T21:00:00Z",
+          "grib_f": 76.01,
+          "api_f": 76.0,
+          "difference_f": 0.01
+        },
+        {
+          "valid_time": "2026-09-06T22:00:00Z",
+          "grib_f": 79.07,
+          "api_f": 79.0,
+          "difference_f": 0.07
+        },
+        {
+          "valid_time": "2026-09-06T23:00:00Z",
+          "grib_f": 77.99,
+          "api_f": 78.0,
+          "difference_f": -0.01
+        },
+        {
+          "valid_time": "2026-09-07T00:00:00Z",
+          "grib_f": 79.07,
+          "api_f": 79.0,
+          "difference_f": 0.07
+        },
+        {
+          "valid_time": "2026-09-07T01:00:00Z",
+          "grib_f": 82.85,
+          "api_f": 83.0,
+          "difference_f": -0.15
+        }
+      ]
+    }
+  ]
+}

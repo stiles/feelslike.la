@@ -1,0 +1,33 @@
+{
+  "note": "Reviewed reference points. The default candidate is the pole of inaccessibility of a place's largest polygon part, which sits inside the polygon and away from its edges. Overrides exist where that point lands away from where residents actually live. Coordinates are longitude, latitude in EPSG:4326.",
+  "places": {
+    "del-rey": {
+      "reviewed": true,
+      "review_note": "Default point sits in the middle of the neighborhood, about two miles inland from the beach."
+    },
+    "santa-monica": {
+      "reviewed": true,
+      "review_note": "Default point sits near Santa Monica College, mid-city. The city is only about two miles deep, narrower than one NDFD cell, so any point inside it samples a similar coastal cell."
+    },
+    "downtown": {
+      "reviewed": true,
+      "review_note": "Default point sits near Fourth Street and Broadway in the civic and business core."
+    },
+    "pasadena": {
+      "longitude": -118.1445,
+      "latitude": 34.1478,
+      "reviewed": true,
+      "review_note": "Overridden to the Colorado Boulevard and Fair Oaks Avenue core. The default point drifts west toward the Arroyo Seco, and the polygon includes a detached eastern annexation plus foothill terrain."
+    },
+    "lancaster": {
+      "longitude": -118.137,
+      "latitude": 34.6868,
+      "reviewed": true,
+      "review_note": "Overridden to downtown Lancaster at Lancaster Boulevard and Sierra Highway. The city covers about 102 square miles of mostly open desert, so a geometric interior point is not representative."
+    },
+    "woodland-hills": {
+      "reviewed": true,
+      "review_note": "Default point sits near Warner Center, in the middle of the developed valley floor portion."
+    }
+  }
+}
