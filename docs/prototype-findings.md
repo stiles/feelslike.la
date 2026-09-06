@@ -37,9 +37,16 @@ Decoded properties, read from GRIB metadata rather than inferred:
 The two files agree on grid geometry and on all 42 valid times, so apparent and air
 temperature can be sampled as one aligned stack without regridding.
 
-The file was 10 minutes old when downloaded. That is source freshness measured against
-the run's reference time, which is the number the interface should use for a staleness
-state, not the download timestamp.
+The file was 10 minutes old when downloaded, measured against the run's reference time.
+Source freshness, not the download timestamp, is what the interface should use for a
+staleness state.
+
+That subtraction can go negative, though. A later build the same afternoon retrieved a file
+at 20:26Z whose reference time was 20:30:00Z, and the file's own `Last-Modified` was
+20:22Z. Both observed cycles were posted about 22 minutes past the hour and stamped with
+the following half hour, so a run can be several minutes "newer" than the moment it was
+downloaded. A freshness check has to clamp at zero rather than display a negative age.
+Two cycles is not enough to call that a rule about NDFD's schedule.
 
 ### A 24-hour horizon is available, with a caveat
 
@@ -228,7 +235,7 @@ forecast, though adjacent small neighborhoods legitimately will.
   spread; a marine-layer day in June could compress that.
 - Reference points for the other 264 places are computed but unreviewed. Coastal,
   elongated and mountainous places need eyes on them before publication.
-- Update cadence in practice. The bucket advertises refreshes as often as every half hour,
-  and this build saw one run only.
-- Whether the 19:30Z reference time is stable across cycles or shifts within the hour,
-  which decides how the hourly schedule should be timed.
+- Update cadence in practice. Two cycles an hour apart is not a schedule, and the bucket
+  advertises refreshes as often as every half hour for some elements.
+- Whether apparent and air temperature always share a reference time. They did in both
+  observed cycles, and the pipeline refuses to build if they ever diverge.

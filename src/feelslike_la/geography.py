@@ -24,10 +24,14 @@ from .config import CONFIG_DIR, DATA_DIR, USER_AGENT
 log = logging.getLogger(__name__)
 
 GEOGRAPHY_DIR = DATA_DIR / "geography"
-FULL_URL = "https://stilesdata.com/la-geography/la_neighborhoods_comprehensive.geojson"
-SIMPLIFIED_URL = "https://stilesdata.com/la-geography/la_neighborhoods_comprehensive_simplified.geojson"
+BASE_URL = "https://stilesdata.com/la-geography"
 FULL_NAME = "la_neighborhoods_comprehensive.geojson"
 SIMPLIFIED_NAME = "la_neighborhoods_comprehensive_simplified.geojson"
+BOUNDARY_NAME = "la_county_boundary.geojson"
+
+# Full polygons are authoritative for place assignment, the simplified export is for
+# display, and the county boundary is the display coverage the contours are clipped to.
+LAYERS = (FULL_NAME, SIMPLIFIED_NAME, BOUNDARY_NAME)
 
 # Degrees. Roughly 50 m at this latitude: fine enough to stay off polygon edges,
 # coarse enough that polylabel converges quickly on complex coastlines.
@@ -67,15 +71,22 @@ class Place:
 def download_geography(force: bool = False) -> dict[str, Path]:
     GEOGRAPHY_DIR.mkdir(parents=True, exist_ok=True)
     paths = {}
-    for url, name in ((FULL_URL, FULL_NAME), (SIMPLIFIED_URL, SIMPLIFIED_NAME)):
+    for name in LAYERS:
         path = GEOGRAPHY_DIR / name
         if force or not path.exists():
-            response = requests.get(url, timeout=120, headers={"User-Agent": USER_AGENT})
+            response = requests.get(
+                f"{BASE_URL}/{name}", timeout=120, headers={"User-Agent": USER_AGENT}
+            )
             response.raise_for_status()
             path.write_bytes(response.content)
             log.info("downloaded %s (%.1f MB)", name, len(response.content) / 1e6)
         paths[name] = path
     return paths
+
+
+def load_boundary(path: Path | None = None):
+    """The county boundary used as display coverage for clipping contours."""
+    return gpd.read_file(path or GEOGRAPHY_DIR / BOUNDARY_NAME)
 
 
 def geography_version(path: Path) -> str:

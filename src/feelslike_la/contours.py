@@ -110,12 +110,29 @@ def _optional_number(value) -> float | None:
     return None if math.isnan(number) else number
 
 
+def snap_to_output_precision(bands, precision: int):
+    """Snap geometry onto the output coordinate grid before writing.
+
+    Rounding coordinates in the serializer is not safe on its own: at four decimals, about
+    11 m, coastal slivers around Palos Verdes and Catalina collapse into rings with too few
+    points or fold into self-intersections. GEOS precision reduction snaps to the same grid
+    and repairs or drops those components, so the written file is valid by construction.
+    """
+    from shapely import set_precision
+
+    snapped = bands.copy()
+    snapped["geometry"] = set_precision(snapped.geometry.values, 10.0**-precision)
+    snapped = snapped[~snapped.geometry.is_empty & snapped.geometry.notna()]
+    return snapped.reset_index(drop=True)
+
+
 def write_frame(bands, path, precision: int = 4) -> int:
     """Write one frame as GeoJSON. Returns bytes written.
 
     Serialized here rather than through GDAL so open-ended class boundaries stay JSON
     nulls instead of the strings or NaN literals a driver round-trip produces.
     """
+    bands = snap_to_output_precision(bands, precision)
     features = []
     for row in bands.itertuples():
         geometry = mapping(row.geometry)

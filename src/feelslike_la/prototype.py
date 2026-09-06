@@ -343,7 +343,7 @@ def run(build: Path | None = None, api_check: bool = True) -> dict:
     plot_series(series, window.times, apparent_inventory.reference_times[0],
                 OUTPUT_DIR / "six_place_series.png")
 
-    boundary = gpd.read_file(geo.GEOGRAPHY_DIR / "la_county_boundary.geojson")
+    boundary = geo.load_boundary()
     mask = display_mask(boundary, config.display["clip_simplify_degrees"])
     field = apparent[peak_index]
     contour_bands = build_bands(field, reference, config.band_breaks_f, clip=mask)

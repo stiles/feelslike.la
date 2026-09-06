@@ -5,9 +5,16 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 
-# Raw and intermediate data, generated publish assets
-data/
+# Raw and intermediate data, generated publish assets.
+# data/ is matched by contents rather than as a directory, so the replay fixture below
+# can be re-included: git will not descend into an excluded directory.
+data/*
 build/
+
+# Except the replay fixture, which is how a build is reproduced offline
+!data/fixtures/
+data/fixtures/*
+!data/fixtures/*.npz
 
 # Frontend
 web/node_modules/

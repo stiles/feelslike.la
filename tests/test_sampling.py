@@ -76,6 +76,34 @@ def test_a_nodata_cell_yields_missing_values_not_zeros():
     assert np.isnan(series_at(frames, cell)).all()
 
 
+def test_the_published_lookup_formula_matches_the_resolver():
+    """grid.json tells clients how to find a cell. It must give the pipeline's answer.
+
+    If this drifts, a browser would read a neighboring cell's forecast under the right
+    place name, which is invisible in testing and wrong on the page.
+    """
+    import math
+
+    from pyproj import Transformer
+    from rasterio.windows import transform as window_transform_for
+
+    window = Window(col_off=4, row_off=6, width=20, height=20)
+    grid = resolver(window)
+    a, _, c, _, e, f = tuple(window_transform_for(window, TRANSFORM))[:6]
+    forward = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
+
+    for longitude, latitude in [
+        (-118.2467, 34.0418),
+        (-118.4792, 34.0213),
+        (-118.10, 34.05),
+        (-118.35, 33.95),
+    ]:
+        x, y = forward.transform(longitude, latitude)
+        col = math.floor((x - c) / a) + int(window.col_off)
+        row = math.floor((y - f) / e) + int(window.row_off)
+        assert f"r{row}c{col}" == grid.resolve(longitude, latitude).cell_id
+
+
 def inventory(transform: Affine, width: int = WIDTH, height: int = HEIGHT) -> Inventory:
     from datetime import UTC, datetime
 
