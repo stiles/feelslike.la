@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Feels Like LA</title>
+    <meta
+      name="description"
+      content="What it will feel like across Los Angeles County over the next 24 hours, from National Weather Service forecasts."
+    />
+    <meta name="color-scheme" content="light" />
+  </head>
+  <body>
+    <a class="skip-link" href="#forecast">Skip to the forecast</a>
+
+    <header class="masthead">
+      <h1>Feels Like LA</h1>
+      <p class="tagline">The next 24 hours, by neighborhood</p>
+    </header>
+
+    <main>
+      <section class="finder" aria-labelledby="finder-heading">
+        <h2 class="visually-hidden" id="finder-heading">Choose a place</h2>
+        <div class="search" id="search"></div>
+        <button class="locate" id="locate" type="button">Use my location</button>
+        <p class="locate-status" id="locate-status" role="status"></p>
+      </section>
+
+      <section class="card" id="forecast" aria-labelledby="card-place" aria-busy="true">
+        <div id="card"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="chart-heading">
+        <h2 class="panel-heading" id="chart-heading">Next 24 hours</h2>
+        <div id="chart"></div>
+      </section>
+
+      <section class="panel map-panel" aria-labelledby="map-heading">
+        <h2 class="panel-heading" id="map-heading">Countywide at this hour</h2>
+        <div id="map-shell">
+          <div id="map" role="img"></div>
+          <div id="legend" class="legend"></div>
+        </div>
+        <div id="slider"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="compare-heading">
+        <h2 class="panel-heading" id="compare-heading">Compare with another place</h2>
+        <div id="compare"></div>
+      </section>
+
+      <footer class="notes" id="notes"></footer>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -20,8 +20,15 @@ from pathlib import Path
 
 import numpy as np
 from rasterio.transform import xy
+from shapely.geometry import mapping
 
-from .contours import build_bands, display_mask, snap_to_output_precision, write_frame
+from .contours import (
+    build_bands,
+    display_mask,
+    round_coordinates,
+    snap_to_output_precision,
+    write_frame,
+)
 from .times import iso_z, local_label, utc_key
 
 SCHEMA_VERSION = 1
@@ -111,6 +118,125 @@ def write_places(directory: Path, places: list, geography_version: str) -> int:
             "places": [asdict(place) for place in places],
         },
     )
+
+
+def write_place_outlines(
+    directory: Path,
+    frame,
+    simplify_degrees: float,
+    precision: int,
+) -> tuple[int, dict]:
+    """Place polygons for drawing a selected place, carrying slug and name only.
+
+    Display geometry, never assignment geometry: reference points come from the full
+    polygons. Simplified and precision-reduced so the whole county fits in one request
+    the interface can defer until after the forecast is on screen.
+    """
+    import geopandas as gpd
+    from shapely import set_precision
+
+    outlines = gpd.GeoDataFrame(
+        {"slug": frame["slug"], "name": frame["name"]},
+        geometry=frame.geometry.simplify(simplify_degrees, preserve_topology=True),
+        crs=frame.crs,
+    )
+    outlines["geometry"] = set_precision(outlines.geometry.values, 10.0**-precision)
+    dropped = sorted(outlines.loc[outlines.geometry.is_empty, "slug"])
+    outlines = outlines[~outlines.geometry.is_empty & outlines.geometry.notna()]
+
+    features = []
+    for row in outlines.itertuples():
+        geometry = mapping(row.geometry)
+        geometry["coordinates"] = round_coordinates(geometry["coordinates"], precision)
+        features.append(
+            {
+                "type": "Feature",
+                "properties": {"slug": row.slug, "name": row.name},
+                "geometry": geometry,
+            }
+        )
+
+    path = directory / "place_outlines.geojson"
+    path.write_text(
+        json.dumps(
+            {
+                "type": "FeatureCollection",
+                "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+                "features": features,
+            },
+            allow_nan=False,
+            separators=(",", ":"),
+        )
+    )
+    return path.stat().st_size, {"outlines": len(features), "outlines_dropped": dropped}
+
+
+def write_county(directory: Path, boundary, simplify_degrees: float, precision: int) -> int:
+    """The county silhouette, as one dissolved polygon.
+
+    Two jobs on the map. It draws the coastline and county line, without which a mild
+    afternoon of pale bands has no recognizable shape against the page. And it fills the
+    county in the no-data gray beneath the bands, so a cell with no forecast reads as a
+    hole rather than as whatever color happens to sit behind it.
+    """
+    from shapely import set_precision
+    from shapely.ops import unary_union
+
+    dissolved = unary_union(boundary.geometry.values).simplify(
+        simplify_degrees, preserve_topology=True
+    )
+    dissolved = set_precision(dissolved, 10.0**-precision)
+    geometry = mapping(dissolved)
+    geometry["coordinates"] = round_coordinates(geometry["coordinates"], precision)
+
+    path = directory / "county.geojson"
+    path.write_text(
+        json.dumps(
+            {
+                "type": "FeatureCollection",
+                "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"name": "Los Angeles County"},
+                        "geometry": geometry,
+                    }
+                ],
+            },
+            allow_nan=False,
+            separators=(",", ":"),
+        )
+    )
+    return path.stat().st_size
+
+
+def band_legend(breaks: list[float], colors: list[str]) -> list[dict]:
+    """One entry per class, in ascending order, including both open-ended classes."""
+    if len(colors) != len(breaks) + 1:
+        raise ValueError(
+            f"{len(colors)} band colors for {len(breaks)} breaks; "
+            "the palette needs one color per class, including the open bottom and top"
+        )
+    legend = []
+    for band_id, color in enumerate(colors):
+        lower = None if band_id == 0 else float(breaks[band_id - 1])
+        upper = None if band_id >= len(breaks) else float(breaks[band_id])
+        if lower is None:
+            label = f"Below {upper:.0f}°"
+        elif upper is None:
+            label = f"{lower:.0f}° and above"
+        else:
+            label = f"{lower:.0f} to {upper:.0f}°"
+        legend.append(
+            {
+                "band_id": band_id,
+                "lower_f": lower,
+                "upper_f": upper,
+                "color": color,
+                "label": label,
+            }
+        )
+    return legend
 
 
 def write_cell_forecasts(
@@ -352,6 +478,7 @@ def write_manifest(
     frames: list[dict],
     units: list[str],
     generated_at: datetime,
+    display: dict,
 ) -> int:
     source_files = []
     for record in download["source_files"]:
@@ -388,6 +515,7 @@ def write_manifest(
             "requested_hours": window.requested_hours,
             "complete_24h": window.complete,
             "coverage_note": window.note,
+            "display": display,
             "assets": assets,
             "frames": frames,
         },

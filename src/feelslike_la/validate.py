@@ -89,7 +89,10 @@ def validate_build(directory: Path, expected_hours: int | None = None) -> Report
     places = _check_places(directory, manifest, report)
     cells = _check_cell_forecasts(directory, manifest, times, fingerprint, report)
     _check_place_cells(directory, manifest, places, cells, fingerprint, report)
+    _check_display(manifest, places, report)
     _check_frames(directory, manifest, times, report)
+    _check_place_outlines(directory, manifest, places, report)
+    _check_county(directory, manifest, report)
     return report
 
 
@@ -311,6 +314,177 @@ def _check_place_cells(
             report.fail(f"{slug} has no cell and no stated reason")
 
 
+def _check_display(manifest: dict, places: dict, report: Report) -> None:
+    """The legend the interface draws has to describe the classes the data can produce."""
+    display = manifest.get("display") or {}
+    breaks = manifest.get("band_breaks_f", [])
+    bands = display.get("bands", [])
+    if not report.require(bool(bands), "manifest has no display band legend"):
+        return
+
+    report.require(
+        len(bands) == len(breaks) + 1,
+        f"{len(bands)} legend entries for {len(breaks)} breaks; "
+        "every class needs one, including the open bottom and top",
+    )
+    for index, band in enumerate(bands):
+        if band.get("band_id") != index:
+            report.fail(f"legend entry {index} declares band_id {band.get('band_id')}")
+            break
+        expected_lower = None if index == 0 else breaks[index - 1]
+        expected_upper = None if index >= len(breaks) else breaks[index]
+        if band.get("lower_f") != expected_lower or band.get("upper_f") != expected_upper:
+            report.fail(
+                f"legend band {index} declares bounds {band.get('lower_f')}-"
+                f"{band.get('upper_f')} instead of {expected_lower}-{expected_upper}"
+            )
+            break
+        if not isinstance(band.get("color"), str) or not band["color"].startswith("#"):
+            report.fail(f"legend band {index} has no color")
+            break
+
+    colors = [band.get("color") for band in bands]
+    report.require(
+        len(set(colors)) == len(colors),
+        "two temperature classes share a color, which makes them indistinguishable",
+    )
+    no_data = display.get("no_data_color")
+    report.require(bool(no_data), "manifest declares no color for cells without a forecast")
+    if no_data and all(isinstance(color, str) for color in colors):
+        _check_color_separation(no_data, colors, report)
+
+    unknown = [slug for slug in display.get("label_places", []) if places and slug not in places]
+    report.require(not unknown, f"map labels name places absent from the index: {unknown[:5]}")
+
+
+# Minimum CIE76 distance between two colors the reader has to tell apart. Calibrated
+# against a real mistake: a #e5e5e4 no-data gray beside a #dfe9e4 mild band measured 4.2,
+# which is indistinguishable on a phone in daylight.
+MINIMUM_COLOR_DISTANCE = 8.0
+
+
+def _check_color_separation(no_data: str, colors: list[str], report: Report) -> None:
+    """Colors a reader must separate have to be perceptually apart, not merely unequal.
+
+    Identical hex codes are the easy case. The dangerous one is two swatches four points
+    apart in Lab, where missing data reads as a temperature and nothing looks wrong.
+    """
+    try:
+        no_data_lab = _lab(no_data)
+        labs = [(color, _lab(color)) for color in colors]
+    except ValueError as error:
+        report.fail(f"unreadable display color: {error}")
+        return
+
+    for color, lab in labs:
+        distance = _distance(no_data_lab, lab)
+        report.require(
+            distance >= MINIMUM_COLOR_DISTANCE,
+            f"the no-data gray {no_data} is {distance:.1f} from the band color {color}, "
+            f"under the {MINIMUM_COLOR_DISTANCE} needed to read as missing rather than mild",
+        )
+
+    for index in range(len(labs) - 1):
+        (first, first_lab), (second, second_lab) = labs[index], labs[index + 1]
+        distance = _distance(first_lab, second_lab)
+        report.require(
+            distance >= MINIMUM_COLOR_DISTANCE,
+            f"adjacent classes {first} and {second} are {distance:.1f} apart, "
+            "too close to read as different temperatures",
+        )
+
+
+def _lab(color: str) -> tuple[float, float, float]:
+    """sRGB hex to CIE Lab, for measuring how different two swatches look."""
+    if not (isinstance(color, str) and color.startswith("#") and len(color) == 7):
+        raise ValueError(f"{color!r} is not a #rrggbb color")
+    channels = []
+    for offset in (1, 3, 5):
+        value = int(color[offset : offset + 2], 16) / 255
+        channels.append(value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4)
+    red, green, blue = channels
+
+    x = (0.4124 * red + 0.3576 * green + 0.1805 * blue) / 0.95047
+    y = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    z = (0.0193 * red + 0.1192 * green + 0.9505 * blue) / 1.08883
+
+    def curve(value: float) -> float:
+        return value ** (1 / 3) if value > 0.008856 else 7.787 * value + 16 / 116
+
+    fx, fy, fz = curve(x), curve(y), curve(z)
+    return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
+
+
+def _distance(first: tuple[float, float, float], second: tuple[float, float, float]) -> float:
+    return math.dist(first, second)
+
+
+def _check_place_outlines(directory: Path, manifest: dict, places: dict, report: Report) -> None:
+    """Display geometry for every place, so selecting one can always draw it."""
+    name = manifest.get("assets", {}).get("place_outlines")
+    if not name:
+        report.fail("manifest lists no place outline asset")
+        return
+    path = directory / name
+    if not path.exists():
+        report.fail(f"{name} is missing")
+        return
+
+    collection = _read_reported(path, report)
+    if collection is None:
+        return
+
+    slugs = set()
+    for feature in collection.get("features", []):
+        slug = (feature.get("properties") or {}).get("slug")
+        if not slug:
+            report.fail("a place outline has no slug")
+            break
+        if slug in slugs:
+            report.fail(f"duplicate outline for {slug}")
+            break
+        slugs.add(slug)
+        geometry = feature.get("geometry") or {}
+        if geometry.get("type") not in {"Polygon", "MultiPolygon"}:
+            report.fail(f"outline for {slug} has a {geometry.get('type')} geometry")
+            break
+        if not geometry.get("coordinates"):
+            report.fail(f"outline for {slug} has an empty geometry")
+            break
+
+    report.counts["place_outlines"] = len(slugs)
+    if places:
+        missing = sorted(set(places) - slugs)
+        report.require(not missing, f"places with no outline to draw: {missing[:5]}")
+        extra = sorted(slugs - set(places))
+        report.require(not extra, f"outlines for places absent from the index: {extra[:5]}")
+
+
+def _check_county(directory: Path, manifest: dict, report: Report) -> None:
+    """The silhouette the map draws its coastline and its no-data fill from."""
+    name = manifest.get("assets", {}).get("county")
+    if not name:
+        report.fail("manifest lists no county outline asset")
+        return
+    path = directory / name
+    if not path.exists():
+        report.fail(f"{name} is missing")
+        return
+
+    collection = _read_reported(path, report)
+    if collection is None:
+        return
+    features = collection.get("features", [])
+    if not report.require(len(features) == 1, f"{name} has {len(features)} features, expected one"):
+        return
+    geometry = (features[0] or {}).get("geometry") or {}
+    report.require(
+        geometry.get("type") in {"Polygon", "MultiPolygon"},
+        f"{name} carries a {geometry.get('type')} geometry",
+    )
+    report.require(bool(geometry.get("coordinates")), f"{name} has an empty geometry")
+
+
 def _check_frames(directory: Path, manifest: dict, times: list[str], report: Report) -> None:
     frames = manifest.get("frames", [])
     report.counts["frames"] = len(frames)
@@ -324,6 +498,10 @@ def _check_frames(directory: Path, manifest: dict, times: list[str], report: Rep
     )
 
     breaks = manifest.get("band_breaks_f", [])
+    palette = {
+        band.get("band_id") for band in (manifest.get("display") or {}).get("bands", [])
+    }
+    drawn: set[int] = set()
     for frame in frames:
         path = directory / frame["path"] if frame.get("path") else None
         if path is None or not path.exists():
@@ -347,6 +525,7 @@ def _check_frames(directory: Path, manifest: dict, times: list[str], report: Rep
             if not isinstance(band_id, int) or not 0 <= band_id <= len(breaks):
                 report.fail(f"frame {path.name} has an out-of-range band_id {band_id}")
                 break
+            drawn.add(band_id)
 
             lower, upper = properties.get("lower_f"), properties.get("upper_f")
             expected_lower = None if band_id == 0 else breaks[band_id - 1]
@@ -365,6 +544,14 @@ def _check_frames(directory: Path, manifest: dict, times: list[str], report: Rep
             if not geometry.get("coordinates"):
                 report.fail(f"frame {path.name} has an empty geometry")
                 break
+
+    if palette:
+        uncolored = sorted(drawn - palette)
+        report.require(
+            not uncolored,
+            f"the frames draw classes the legend has no color for: {uncolored}",
+        )
+    report.counts["band_ids_drawn"] = sorted(drawn)
 
 
 def validate_geometry(frames_directory: Path) -> Report:

@@ -106,3 +106,23 @@ def test_class_boundaries_do_not_shift_with_the_data():
         hot_row = hot[hot["band_id"] == band_id].iloc[0]
         assert cool_row["lower_f"] == hot_row["lower_f"]
         assert cool_row["upper_f"] == hot_row["upper_f"]
+
+
+def test_the_palette_must_cover_every_class():
+    """One color per class, including both open-ended ones.
+
+    A palette one short leaves the hottest class with no color, which the map would draw
+    in the no-data gray: the hottest hour of the year rendered as missing data.
+    """
+    import pytest
+
+    from feelslike_la.export import band_legend
+
+    breaks = [60.0, 65.0, 70.0]
+    legend = band_legend(breaks, ["#3f6fa8", "#bfd6e6", "#f8c86e", "#cd4322"])
+    assert [entry["band_id"] for entry in legend] == [0, 1, 2, 3]
+    assert legend[0]["lower_f"] is None and legend[0]["label"] == "Below 60°"
+    assert legend[-1]["upper_f"] is None and legend[-1]["label"] == "70° and above"
+
+    with pytest.raises(ValueError, match="one color per class"):
+        band_legend(breaks, ["#3f6fa8", "#bfd6e6", "#f8c86e"])

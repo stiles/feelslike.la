@@ -35,6 +35,63 @@ band_breaks_f = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110]
 clip_simplify_degrees = 0.0005
 # Output coordinate decimals. Four is about 11 m, finer than a 2.5 km forecast cell.
 coordinate_precision = 4
+# Place outlines are for drawing a selected place, not for assignment. Roughly 45 m.
+outline_simplify_degrees = 0.0005
+
+# One color per band, from the open bottom class through the open top class, so this
+# list is always one longer than band_breaks_f. Published in the manifest and read by
+# the interface, which keeps the legend and the fills from drifting apart.
+#
+# Cool blues below the mild middle, warm oranges and reds above it. Temperature has no
+# good or bad direction, so the ramp is a neutral cool-to-warm pair rather than a
+# valenced one. Adding a hotter class means appending a color, never recoloring an
+# existing one: a reader who learns that dark orange means the mid-90s should not have
+# that change under them in a hotter week.
+band_colors = [
+  "#3f6fa8",  # below 50
+  "#6592c1",  # 50 to 55
+  "#92b4d3",  # 55 to 60
+  "#bfd6e6",  # 60 to 65
+  "#e4eef2",  # 65 to 70
+  "#fdf2c9",  # 70 to 75
+  "#fbdf9b",  # 75 to 80
+  "#f8c86e",  # 80 to 85
+  "#f4a94d",  # 85 to 90
+  "#ef8839",  # 90 to 95
+  "#e2652c",  # 95 to 100
+  "#cd4322",  # 100 to 105
+  "#ad2419",  # 105 to 110
+  "#7f1015",  # 110 and above
+]
+# Cells with no forecast take this gray and never a band color.
+#
+# A mid gray rather than a light one, deliberately. Every band is either tinted or
+# saturated, so a neutral at this lightness cannot be mistaken for one. An earlier
+# #e5e5e4 sat a hair from the 65-to-70 band, which would have drawn missing data as a
+# mild afternoon.
+no_data_color = "#b9b9b9"
+
+# Map labels, in the order they win a collision. Deliberately short: the map is carrying
+# the weather, and a full gazetteer of 270 names would bury it. Every slug is checked
+# against the place index at build time.
+label_places = [
+  "downtown",
+  "santa-monica",
+  "pasadena",
+  "long-beach",
+  "woodland-hills",
+  "lancaster",
+  "palmdale",
+  "malibu",
+  "burbank",
+  "san-pedro",
+  "pomona",
+  "santa-clarita",
+  "torrance",
+  "el-monte",
+  "avalon",
+  "acton",
+]
 
 # Crop envelope for Los Angeles County plus a buffer of several native cells.
 # Deliberately wider than the la-geography lookup's -119.0/-117.6, 33.7/34.8 box,

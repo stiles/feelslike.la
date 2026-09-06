@@ -247,6 +247,18 @@ def assemble(prepared: Prepared, config: ForecastConfig, destination: Path) -> d
     sizes["grid"] = export.write_grid(
         destination, prepared.reference, prepared.inventory, prepared.crop
     )
+    sizes["place_outlines"], outline_counts = export.write_place_outlines(
+        destination,
+        frame,
+        config.display["outline_simplify_degrees"],
+        config.display["coordinate_precision"],
+    )
+    sizes["county"] = export.write_county(
+        destination,
+        boundary,
+        config.display["clip_simplify_degrees"],
+        config.display["coordinate_precision"],
+    )
 
     frames = export.write_frames(
         destination,
@@ -265,8 +277,20 @@ def assemble(prepared: Prepared, config: ForecastConfig, destination: Path) -> d
         "places": "places.json",
         "cell_forecasts": "cell_forecasts.json",
         "place_cells": "place_cells.json",
+        "place_outlines": "place_outlines.geojson",
+        "county": "county.geojson",
         "grid": "grid.json",
         "frames_directory": "frames/",
+    }
+    known_slugs = {place.slug for place in places}
+    unknown_labels = [slug for slug in config.display["label_places"] if slug not in known_slugs]
+    if unknown_labels:
+        raise ValueError(f"configured map labels are not places: {unknown_labels}")
+
+    display = {
+        "bands": export.band_legend(config.band_breaks_f, config.display["band_colors"]),
+        "no_data_color": config.display["no_data_color"],
+        "label_places": list(config.display["label_places"]),
     }
     sizes["manifest"] = export.write_manifest(
         destination,
@@ -281,6 +305,7 @@ def assemble(prepared: Prepared, config: ForecastConfig, destination: Path) -> d
         frames=frames,
         units=prepared.units,
         generated_at=datetime.now(UTC),
+        display=display,
     )
 
     return {
@@ -293,6 +318,7 @@ def assemble(prepared: Prepared, config: ForecastConfig, destination: Path) -> d
             "frames": len(frames),
             **cell_counts,
             **mapping_counts,
+            **outline_counts,
         },
         "complete_24h": prepared.window.complete,
         "coverage_note": prepared.window.note,

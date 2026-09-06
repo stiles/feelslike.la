@@ -96,9 +96,9 @@ def display_mask(boundary, tolerance: float):
     return simplified
 
 
-def _round_coordinates(value, precision: int):
+def round_coordinates(value, precision: int):
     if isinstance(value, (list, tuple)):
-        return [_round_coordinates(item, precision) for item in value]
+        return [round_coordinates(item, precision) for item in value]
     return round(float(value), precision)
 
 
@@ -136,7 +136,7 @@ def write_frame(bands, path, precision: int = 4) -> int:
     features = []
     for row in bands.itertuples():
         geometry = mapping(row.geometry)
-        geometry["coordinates"] = _round_coordinates(geometry["coordinates"], precision)
+        geometry["coordinates"] = round_coordinates(geometry["coordinates"], precision)
         features.append(
             {
                 "type": "Feature",

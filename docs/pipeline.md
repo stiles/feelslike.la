@@ -22,7 +22,8 @@ result on disk and only then repoints `build/latest.json`.
    envelope plus four cells and converts to Fahrenheit using each band's declared unit.
 3. **Assemble.** Validates the geography, builds the place index, finds every native cell
    touching the county, writes the cell series, maps places to cells, writes the grid
-   definition, contours all 24 hours and writes the manifest.
+   definition, writes the display geometry the map draws, contours all 24 hours and writes
+   the manifest.
 4. **Validate.** Reads the assembled build back off disk and runs every check in
    `validate.py`, plus geometry validity on all 24 frames.
 5. **Publish.** Moves the staging directory to `build/builds/<build_id>/` and rewrites
@@ -54,7 +55,7 @@ the version change.
 
 ## Assets
 
-See the table in the [README](../README.md). Two of them deserve a note.
+See the table in the [README](../README.md). Four of them deserve a note.
 
 **`cell_forecasts.json`** carries one record per native cell touching the county, 1,850 of
 them, each with 24 apparent and 24 air temperatures. Values keep two decimals, which
@@ -66,6 +67,21 @@ is never filled from a neighbor.
 the arithmetic for turning a coordinate into a cell id. That replaces a cell-footprint
 geometry file entirely. A test asserts the published formula returns the cell the pipeline
 itself used, for a set of coordinates across the county.
+
+**`place_outlines.geojson` and `county.geojson`** are display geometry, never assignment
+geometry: reference points come from the full polygons, and these are simplified to about
+45 m. The outlines carry slug and name only, so the whole county fits in one request the
+interface defers until the forecast is already on screen. The county is one dissolved
+polygon, which the map uses for the coastline and for the no-data fill beneath the bands.
+
+**The manifest's `display` block** carries the palette and the map's label list. One color
+per temperature class, including both open-ended ones, so the map fills and the legend are
+built from the same values and cannot drift apart. Validation checks more than presence:
+every class the frames actually draw must have a color, and the no-data gray must sit at
+least 8 units of CIE76 distance from every band. That threshold was calibrated against a
+real mistake in this repo, an `#e5e5e4` gray beside a `#dfe9e4` mild band, 4.2 apart and
+indistinguishable on a phone. Adding a hotter class means appending a color, never
+recoloring an existing one.
 
 ## Cell ids
 
@@ -80,3 +96,9 @@ reference point, so a consumer can tell when a stored mapping is stale.
 Not wired up yet. The intended shape follows the bots pattern: `make all` on an hourly
 schedule, then sync `build/` to S3, uploading the `latest.json` pointer last so readers
 never see a manifest whose frames have not arrived.
+
+Two things the interface needs from that deployment. It reads assets relative to the
+pointer's `manifest` path, so every asset in a session comes from one immutable build and
+an update mid-session cannot pair new frames with an old mapping. And the canonical place
+URL is a path, `/del-rey`, so the host has to serve `index.html` for unknown paths;
+`?place=del-rey` works as a fallback where it cannot.

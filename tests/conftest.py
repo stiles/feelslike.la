@@ -10,6 +10,10 @@ import pytest
 BREAKS = [60.0, 65.0, 70.0]
 TIMES = ["2026-09-06T20:00:00Z", "2026-09-06T21:00:00Z"]
 
+# One color per class, far enough apart in Lab to pass the separation check.
+BAND_COLORS = ["#3f6fa8", "#bfd6e6", "#f8c86e", "#cd4322"]
+NO_DATA_COLOR = "#b9b9b9"
+
 
 def square(west: float, south: float, size: float = 0.1) -> dict:
     return {
@@ -42,6 +46,49 @@ def frame_document(band_id: int) -> dict:
                     "observed_max_f": 64.0,
                 },
                 "geometry": square(-118.3, 34.0),
+            }
+        ],
+    }
+
+
+def band_legend() -> list[dict]:
+    legend = []
+    for band_id, color in enumerate(BAND_COLORS):
+        lower = None if band_id == 0 else BREAKS[band_id - 1]
+        upper = None if band_id >= len(BREAKS) else BREAKS[band_id]
+        legend.append(
+            {
+                "band_id": band_id,
+                "lower_f": lower,
+                "upper_f": upper,
+                "color": color,
+                "label": f"{lower} to {upper}",
+            }
+        )
+    return legend
+
+
+def outline_document() -> dict:
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"slug": "del-rey", "name": "Del Rey"},
+                "geometry": square(-118.45, 33.97, size=0.05),
+            }
+        ],
+    }
+
+
+def county_document() -> dict:
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"name": "Los Angeles County"},
+                "geometry": square(-118.5, 33.9, size=0.6),
             }
         ],
     }
@@ -126,6 +173,9 @@ def build(tmp_path: Path) -> Path:
         },
     })
 
+    write(directory / "place_outlines.geojson", outline_document())
+    write(directory / "county.geojson", county_document())
+
     write(directory / "manifest.json", {
         "schema_version": 1,
         "build_id": "20260906T200000Z",
@@ -152,10 +202,17 @@ def build(tmp_path: Path) -> Path:
         "forecast_times": TIMES,
         "requested_hours": 2,
         "complete_24h": True,
+        "display": {
+            "bands": band_legend(),
+            "no_data_color": NO_DATA_COLOR,
+            "label_places": ["del-rey"],
+        },
         "assets": {
             "places": "places.json",
             "cell_forecasts": "cell_forecasts.json",
             "place_cells": "place_cells.json",
+            "place_outlines": "place_outlines.geojson",
+            "county": "county.geojson",
             "grid": "grid.json",
             "frames_directory": "frames/",
         },
