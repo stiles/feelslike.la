@@ -542,22 +542,29 @@ function empty(): GeoJSON.FeatureCollection {
   return { type: 'FeatureCollection', features: [] };
 }
 
-/** The legend, drawn from the manifest so it always describes the published classes. */
+/**
+ * The legend, drawn from the manifest so it always describes the published classes.
+ *
+ * A compact gradient strip rather than fourteen labeled swatches: this sits in the
+ * topbar above the map, and a legend that wide would push the map itself below the
+ * fold. Each band's full label is still available on hover/focus via `title`, and the
+ * scale's two end values anchor the reader without one label per class.
+ */
 export function createLegend(root: HTMLElement, bundle: Bundle): void {
   const bands = bundle.manifest.display.bands;
+  const breaks = bundle.manifest.band_breaks_f;
+  const low = breaks[0];
+  const high = breaks[breaks.length - 1];
   root.innerHTML = `
     <p class="legend-title">Feels like</p>
-    <ul class="legend-scale">
+    <span class="legend-edge">${low}°</span>
+    <ul class="legend-scale" title="Degrees Fahrenheit. The scale never changes with the hour.">
       ${bands
         .map(
-          (band) => `
-        <li title="${escape(band.label)}">
-          <span class="legend-swatch" style="background:${band.color}"></span>
-          <span class="legend-tick">${band.lower_f === null ? '' : Math.round(band.lower_f)}</span>
-        </li>`,
+          (band) => `<li title="${escape(band.label)}"><span class="legend-swatch" style="background:${band.color}"></span></li>`,
         )
         .join('')}
     </ul>
-    <p class="legend-note">Degrees Fahrenheit. The scale never changes with the hour.</p>
+    <span class="legend-edge">${high}°+</span>
   `;
 }

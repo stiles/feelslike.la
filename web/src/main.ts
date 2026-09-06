@@ -13,7 +13,7 @@ import { createCard, escape } from './card';
 import { createChart } from './chart';
 import { createCompare } from './compare';
 import { FrameStore, loadBundle, loadCounty, loadOutlines } from './data';
-import { freshness, hourLabel } from './format';
+import { degrees, freshness, hourLabel } from './format';
 import { CellLookup, resolveCoordinate, resolvePlace } from './lookup';
 import { createPicker } from './picker';
 import { createSlider } from './slider';
@@ -25,7 +25,7 @@ import {
   Store,
   writeUrl,
 } from './state';
-import type { Bundle } from './types';
+import type { Bundle, Selection } from './types';
 import type { MapView } from './map';
 
 const DEFAULT_PLACE = 'downtown';
@@ -110,6 +110,7 @@ function run(bundle: Bundle): void {
     chartView.render(state.selection, state.hour, state.comparison);
     compareView.render(state.selection, state.hour, state.comparison);
     sliderView.render(state.hour);
+    writeHeroSummary(bundle, state.selection, state.hour);
     mapView?.highlight(state.selection, state.comparison);
     writeUrl(state);
     if (state.problem) announce(state.problem);
@@ -250,6 +251,56 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store): void
 function announce(message: string): void {
   const status = document.querySelector('#locate-status');
   if (status) status.textContent = message;
+}
+
+function writeHeroSummary(bundle: Bundle, selection: Selection | null, hour: number): void {
+  const root = document.querySelector('#hero-summary') as HTMLElement | null;
+  if (!root) return;
+
+  const validTime = bundle.manifest.forecast_times[hour];
+  const spread = placeSpread(bundle, hour);
+  if (!validTime || !spread) {
+    root.textContent = 'Pick a neighborhood and scrub the next 24 hours across LA.';
+    return;
+  }
+
+  const selectedValue = selection
+    ? (bundle.cells.get(selection.cellId)?.apparent_temperature_f[hour] ?? null)
+    : null;
+  const selected =
+    selection && selectedValue !== null
+      ? `<strong>${escape(selection.label)}</strong> feels like <strong>${degrees(
+          selectedValue,
+        )}</strong>. `
+      : '';
+  const gap = Math.max(0, Math.round(spread.hot.value) - Math.round(spread.cool.value));
+  root.innerHTML = `${selected}At ${escape(hourLabel(validTime))}, ${escape(
+    spread.cool.name,
+  )} is the cool end at <strong>${degrees(spread.cool.value)}</strong>, while ${escape(
+    spread.hot.name,
+  )} runs <strong>${degrees(spread.hot.value)}</strong>. That is <strong>${gap}° of LA</strong> in one forecast.`;
+}
+
+function placeSpread(bundle: Bundle, hour: number):
+  | {
+      cool: { name: string; value: number };
+      hot: { name: string; value: number };
+    }
+  | null {
+  let cool: { name: string; value: number } | null = null;
+  let hot: { name: string; value: number } | null = null;
+
+  for (const place of bundle.ordered) {
+    const cellId = bundle.placeCells.places[place.slug]?.cell_id;
+    const value = cellId
+      ? (bundle.cells.get(cellId)?.apparent_temperature_f[hour] ?? null)
+      : null;
+    if (value === null) continue;
+    if (!cool || value < cool.value) cool = { name: place.name, value };
+    if (!hot || value > hot.value) hot = { name: place.name, value };
+  }
+
+  return cool && hot ? { cool, hot } : null;
 }
 
 function writeNotes(bundle: Bundle): void {

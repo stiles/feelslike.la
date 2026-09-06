@@ -1,4 +1,5 @@
-/* Mobile first. One column at every width, wider type and a taller map on desktop. */
+/* Mobile first. The map is the opening act: a slim header, then the map itself, with the
+   search and the reading it produces layered directly on it. Everything else follows. */
 
 :root {
   --ink: #262626;
@@ -8,6 +9,13 @@
   --page: #fefefe;
   --panel: #f7f7f7;
   --focus: #5194c3;
+
+  /* Two radius tokens, not fourteen. Panels get the smaller one; a handful of true
+     toggle/tag controls get the pill. Nothing else rounds. */
+  --radius: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
   font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -25,13 +33,14 @@ body {
 }
 
 main {
-  max-width: 780px;
+  max-width: 980px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 16px 56px;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   margin: 0;
 }
 
@@ -58,7 +67,7 @@ a {
 .skip-link:focus {
   left: 8px;
   top: 8px;
-  z-index: 10;
+  z-index: 20;
   padding: 8px 12px;
   background: #fff;
   border: 2px solid var(--focus);
@@ -69,51 +78,136 @@ a {
   outline-offset: 2px;
 }
 
-/* Masthead */
+/* Header. Full-bleed chrome, not another floating panel, so the page reads as a site
+   rather than a component sitting on a background. One headline: the product name. The
+   dynamic spread sentence is support copy underneath it, not a second headline. */
 
 .masthead {
-  max-width: 780px;
+  background: var(--page);
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead-inner {
+  max-width: 980px;
   margin: 0 auto;
-  padding: 20px 16px 8px;
+  padding: 16px 16px 14px;
 }
 
 .masthead h1 {
-  font-size: 22px;
+  font-size: clamp(24px, 5vw, 34px);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
-.tagline {
-  margin: 2px 0 0;
-  color: var(--quiet);
+.eyebrow {
+  margin: 0 0 2px;
+  color: #737373;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-summary {
+  margin: 6px 0 0;
+  max-width: 42rem;
+  color: #4a4a4a;
   font-size: 14px;
+  line-height: 1.4;
 }
 
-/* Finder */
+.hero-summary strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Map panel. A one-line search sits above the map -- that's the entire cost in copy
+   before the visual starts. The legend rides with the map itself, inside the shell that
+   a map failure can safely replace. The only thing overlaying the map's own pixels is
+   the reading for the selected place, pinned to one corner. */
+
+.map-panel {
+  margin-top: 14px;
+}
+
+.finder-row {
+  margin-bottom: 10px;
+}
 
 .finder {
-  padding: 8px 0 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .picker-label {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* The main search's own label is redundant with the visible placeholder text in this
+   compact toolbar; the comparison picker below keeps its visible "Second place" label. */
+.finder .picker-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.finder .picker-shell {
+  flex: 1;
+  min-width: 200px;
+  max-width: 420px;
+}
+
+.locate-status {
+  flex-basis: 100%;
+  margin: 0;
+  min-height: 1.1em;
+  font-size: 12px;
   color: var(--quiet);
 }
 
+.map-frame {
+  position: relative;
+}
+
+#map-shell {
+  border: 1px solid rgb(38 38 38 / 10%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.map-topbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+
 .picker-shell {
+  position: relative;
   display: flex;
   gap: 8px;
+  max-width: 420px;
 }
 
 .picker-input {
   flex: 1;
   min-width: 0;
-  padding: 11px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 9px 13px;
+  border: 1px solid rgb(38 38 38 / 16%);
+  border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
   font: inherit;
@@ -124,11 +218,11 @@ a {
 .locate,
 .suggestion {
   appearance: none;
-  padding: 9px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f0f0f0;
-  color: #737373;
+  padding: 8px 12px;
+  border: 1px solid rgb(38 38 38 / 16%);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
@@ -137,14 +231,21 @@ a {
 .picker-clear:hover,
 .locate:hover,
 .suggestion:hover:not(:disabled) {
-  background: #e6e6e6;
+  background: #f0f0f0;
+}
+
+.suggestion {
+  border-radius: var(--radius-pill);
+  background: #f0f0f0;
+  color: #737373;
+  border-color: transparent;
 }
 
 .suggestion.active {
-  background: #fff;
-  border-color: #aaa;
-  color: var(--ink);
-  font-weight: 700;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+  font-weight: 500;
 }
 
 .suggestion:disabled {
@@ -153,30 +254,31 @@ a {
 }
 
 .locate {
-  margin-top: 8px;
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  white-space: nowrap;
 }
 
-.locate-status {
-  margin: 8px 0 0;
-  min-height: 1.2em;
-  font-size: 13px;
-  color: var(--quiet);
+.locate:hover {
+  background: #111;
 }
 
 .picker-list {
   position: absolute;
-  z-index: 5;
+  top: 100%;
+  left: 0;
+  z-index: 8;
   margin: 4px 0 0;
   padding: 0;
-  max-width: 748px;
-  width: calc(100% - 32px);
+  width: min(100%, 420px);
   max-height: 320px;
   overflow-y: auto;
   list-style: none;
   background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 6px 18px rgb(38 38 38 / 12%);
+  border: 1px solid rgb(38 38 38 / 14%);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgb(38 38 38 / 14%);
 }
 
 .picker-option {
@@ -208,197 +310,15 @@ a {
   text-transform: none;
 }
 
-/* Card */
-
-.card {
-  margin: 16px 0 0;
-  padding: 18px 18px 16px;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: #fff;
-}
-
-.card-place {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-}
-
-.card-hour {
-  margin: 2px 0 0;
-  color: var(--quiet);
-  font-size: 14px;
-}
-
-.card-value {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 8px 0 0;
-}
-
-.card-number {
-  font-size: 72px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.card-unit {
-  font-size: 14px;
-  color: var(--quiet);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.card-secondary {
-  margin: 6px 0 0;
-  font-size: 15px;
-}
-
-.card-peak {
-  margin: 10px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--rule);
-  font-size: 14px;
-}
-
-.card-note,
-.card-hint {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--quiet);
-}
-
-.card-problem {
-  margin: 8px 0 0;
-  font-size: 15px;
-}
-
-.skeleton-text {
-  color: var(--quiet);
-}
-
-/* Panels */
-
-.panel {
-  margin-top: 26px;
-}
-
-.panel-heading {
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.empty {
-  margin: 0;
-  padding: 24px 0;
-  color: var(--quiet);
-  font-size: 14px;
-}
-
-/* Chart */
-
-#chart svg {
-  display: block;
-  overflow: visible;
-}
-
-.grid {
-  stroke: var(--rule);
-  stroke-width: 1;
-  shape-rendering: crispEdges;
-}
-
-.daybreak {
-  stroke: #d8d8d8;
-  stroke-width: 1;
-  stroke-dasharray: 2 3;
-  shape-rendering: crispEdges;
-}
-
-.daybreak-label,
-.tick {
-  fill: var(--axis);
-  font-size: 12px;
-}
-
-.cursor {
-  stroke: #bcbcbc;
-  stroke-width: 1.5;
-  shape-rendering: crispEdges;
-}
-
-.series {
-  fill: none;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.series.primary {
-  stroke: #c52622;
-  stroke-width: 2.4;
-}
-
-.series.comparison {
-  stroke: #5194c3;
-  stroke-width: 1.8;
-  stroke-dasharray: 4 3;
-}
-
-.peak-dot {
-  fill: #c52622;
-  stroke: var(--page);
-  stroke-width: 1.5;
-}
-
-.cursor-dot {
-  fill: #262626;
-  stroke: var(--page);
-  stroke-width: 1.8;
-}
-
-.peak-label {
-  fill: var(--ink);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.chart-key {
-  display: flex;
-  gap: 14px;
-  margin: 6px 0 0;
-  font-size: 13px;
-}
-
-.key {
-  padding-bottom: 1px;
-  border-bottom: 2px solid;
-}
-
-.key.primary {
-  border-color: #c52622;
-}
-
-.key.comparison {
-  border-color: #5194c3;
-}
-
-/* Map */
-
-#map-shell {
-  position: relative;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
+/* Map surface. Positioned in its own right, not just inside a positioned #map-shell:
+   .map-labels and .map-reset are appended straight into this element and placed with
+   pixel coordinates from map.project(), which are relative to #map's own box. With the
+   topbar now sitting above #map inside the shell, anchoring to the shell instead would
+   offset every label by the topbar's height. */
 #map {
-  height: 320px;
+  position: relative;
+  height: min(64vh, 600px);
+  min-height: 380px;
   background: var(--page);
 }
 
@@ -451,7 +371,7 @@ a {
   left: 10px;
   padding: 5px 9px;
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: 6px;
   background: #fff;
   box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
   font: inherit;
@@ -487,23 +407,31 @@ a {
   font-size: 14px;
 }
 
+/* Legend. A compact strip in the topbar, above the map, not a 14-swatch key beneath it. */
+
 .legend {
-  padding: 10px 12px 12px;
-  border-top: 1px solid var(--rule);
-  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
 .legend-title {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--quiet);
+  white-space: nowrap;
 }
 
 .legend-scale {
   display: flex;
   margin: 0;
   padding: 0;
+  width: 140px;
+  height: 10px;
+  border-radius: 3px;
+  overflow: hidden;
   list-style: none;
 }
 
@@ -514,52 +442,241 @@ a {
 
 .legend-swatch {
   display: block;
-  height: 12px;
+  height: 100%;
 }
 
-.legend-tick {
-  display: block;
-  padding-top: 3px;
+.legend-edge {
   font-size: 11px;
   color: var(--axis);
   font-variant-numeric: tabular-nums;
 }
 
-/* Hide every other tick where 14 classes will not fit. */
-@media (max-width: 520px) {
-  .legend-scale li:nth-child(even) .legend-tick {
-    visibility: hidden;
-  }
+/* The forecast reading. The only thing that overlays the map itself: pinned to one
+   corner, sized to leave most of the map visible, and never sharing space with the
+   search bar above it. */
+
+.hero-card {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+  width: min(280px, calc(100% - 24px));
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid rgb(38 38 38 / 8%);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(10px);
 }
 
-.legend-note {
+.card-place {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.card-hour {
+  margin: 1px 0 0;
+  color: var(--quiet);
+  font-size: 12px;
+}
+
+.card-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 6px 0 0;
-  font-size: 11px;
+}
+
+.card-number {
+  font-size: clamp(48px, 13vw, 76px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-unit {
+  font-size: 12px;
+  color: var(--quiet);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.card-secondary {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.card-peak {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+  font-size: 12px;
+}
+
+.card-note,
+.card-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
   color: var(--quiet);
 }
 
-/* Slider */
+.card-problem {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.skeleton-text {
+  color: var(--quiet);
+}
+
+/* Slider. Its own compact row below the map, not a full-bleed control the width of the
+   whole page. */
+
+.slider-panel {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
 
 .slider-row {
-  margin-top: 14px;
+  width: min(100%, 440px);
 }
 
 #hour {
   width: 100%;
-  height: 32px;
-  accent-color: #c52622;
+  height: 28px;
+  accent-color: var(--ink);
 }
 
 .slider-readout {
   margin: 0;
+  text-align: center;
   font-size: 15px;
   font-weight: 500;
 }
 
 .slider-hint {
   margin: 2px 0 0;
+  text-align: center;
   font-size: 12px;
   color: var(--quiet);
+}
+
+/* Panels */
+
+.panel {
+  margin-top: 34px;
+}
+
+.panel-heading {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.empty {
+  margin: 0;
+  padding: 24px 0;
+  color: var(--quiet);
+  font-size: 14px;
+}
+
+/* Chart */
+
+#chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.band-fill {
+  shape-rendering: crispEdges;
+}
+
+.daybreak {
+  stroke: rgb(38 38 38 / 45%);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  shape-rendering: crispEdges;
+}
+
+.daybreak-label,
+.tick {
+  fill: var(--ink);
+  opacity: 0.55;
+  font-size: 12px;
+}
+
+.cursor {
+  stroke: rgb(38 38 38 / 55%);
+  stroke-width: 1.5;
+  shape-rendering: crispEdges;
+}
+
+.series {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.series-casing {
+  fill: none;
+  stroke: #fff;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.series.primary {
+  stroke: var(--ink);
+  stroke-width: 2.4;
+}
+
+.series.comparison {
+  stroke: #2f6f9f;
+  stroke-width: 1.8;
+  stroke-dasharray: 4 3;
+}
+
+.peak-dot {
+  fill: var(--ink);
+  stroke: var(--page);
+  stroke-width: 1.5;
+}
+
+.cursor-dot {
+  fill: var(--ink);
+  stroke: var(--page);
+  stroke-width: 1.8;
+}
+
+.peak-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-key {
+  display: flex;
+  gap: 14px;
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.key {
+  padding-bottom: 1px;
+  border-bottom: 2px solid;
+}
+
+.key.primary {
+  border-color: var(--ink);
+}
+
+.key.comparison {
+  border-color: #2f6f9f;
 }
 
 /* Comparison */
@@ -580,22 +697,32 @@ a {
   color: var(--quiet);
 }
 
-/* Notes */
+/* Footer. Full-bleed site chrome, distinct from the page body, so the page has a bottom
+   the way it now has a top. */
 
-.notes {
-  margin-top: 32px;
-  padding-top: 14px;
-  border-top: 1px solid var(--rule);
+.site-footer {
+  margin-top: 40px;
+  padding: 22px 16px 28px;
+  background: var(--ink);
+  color: #c7c7c7;
   font-size: 12px;
-  color: var(--quiet);
 }
 
-.notes p {
+.site-footer > * {
+  max-width: 980px;
+  margin: 0 auto 8px;
+}
+
+.site-footer p {
   margin: 0 0 8px;
 }
 
+.site-footer a {
+  color: #9dc4e0;
+}
+
 .freshness {
-  color: var(--ink);
+  color: #fff;
 }
 
 .freshness.aging,
@@ -603,28 +730,59 @@ a {
 .freshness.expired {
   padding: 8px 10px;
   border-left: 3px solid #f18851;
-  background: var(--panel);
+  background: rgb(255 255 255 / 8%);
 }
 
 .freshness.expired {
-  border-left-color: #c52622;
+  border-left-color: #e2554f;
 }
 
 .credit code {
   font-size: 11px;
+  color: #a8a8a8;
 }
 
 @media (min-width: 620px) {
-  #map {
-    height: 460px;
+  .masthead-inner {
+    padding: 22px 16px 18px;
   }
 
-  .card-number {
-    font-size: 88px;
+  #map {
+    height: min(70vh, 660px);
+    min-height: 460px;
+  }
+
+  .hero-card {
+    left: 16px;
+    bottom: 16px;
+    width: min(320px, calc(100% - 32px));
+    padding: 16px 18px;
   }
 
   .card-place {
-    font-size: 32px;
+    font-size: 22px;
+  }
+
+  .card-number {
+    font-size: clamp(56px, 9vw, 88px);
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding-inline: 8px;
+  }
+
+  .masthead-inner {
+    padding-inline: 12px;
+  }
+
+  #map-shell {
+    border-radius: var(--radius);
+  }
+
+  .legend-scale {
+    width: 100px;
   }
 }
 

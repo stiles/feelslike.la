@@ -87,16 +87,28 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', describe(bundle, selection, series));
 
-    // Gridlines at whole tens, so the reader can measure without an axis label.
-    const ticks = y.ticks(4);
-    for (const value of ticks) {
-      add(svg, 'line', {
-        x1: MARGIN.left,
-        x2: width - MARGIN.right,
-        y1: y(value),
-        y2: y(value),
-        class: 'grid',
+    // The map's temperature bands, drawn as horizontal fills behind the line. The line
+    // itself only has to show the day's shape; which band a stretch of it falls in is
+    // the color already established everywhere else on the page.
+    const [domainLow = low - pad, domainHigh = high + pad] = y.domain();
+    for (const band of bundle.manifest.display.bands) {
+      const upper = Math.min(domainHigh, band.upper_f ?? domainHigh);
+      const lower = Math.max(domainLow, band.lower_f ?? domainLow);
+      if (upper <= lower) continue;
+      add(svg, 'rect', {
+        x: MARGIN.left,
+        y: y(upper),
+        width: width - MARGIN.left - MARGIN.right,
+        height: Math.max(0, y(lower) - y(upper)),
+        fill: band.color,
+        opacity: 0.55,
+        class: 'band-fill',
       });
+    }
+
+    // Tick labels at whole tens. The bands already divide the field; a gridline on top
+    // of them would either vanish against a dark class or fight its color.
+    for (const value of y.ticks(4)) {
       add(svg, 'text', { x: width - MARGIN.right + 6, y: y(value) + 4, class: 'tick' }).textContent =
         `${Math.round(value)}°`;
     }
@@ -125,13 +137,19 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
       class: 'cursor',
     });
 
+    // A white casing under each line, the same trick the map uses for the selected
+    // outline: the bands behind the line are any color, so the line needs its own
+    // contrast rather than borrowing the background's.
     if (compareSeries) {
-      add(svg, 'path', {
-        d: path(compareSeries) ?? '',
-        class: 'series comparison',
-      });
+      const d = path(compareSeries) ?? '';
+      add(svg, 'path', { d, class: 'series-casing', 'stroke-width': 3.4 });
+      add(svg, 'path', { d, class: 'series comparison' });
     }
-    add(svg, 'path', { d: path(series) ?? '', class: 'series primary' });
+    {
+      const d = path(series) ?? '';
+      add(svg, 'path', { d, class: 'series-casing', 'stroke-width': 4.2 });
+      add(svg, 'path', { d, class: 'series primary' });
+    }
 
     const high24 = peak(series);
     if (high24) {

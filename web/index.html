@@ -14,20 +14,44 @@
     <a class="skip-link" href="#forecast">Skip to the forecast</a>
 
     <header class="masthead">
-      <h1>Feels Like LA</h1>
-      <p class="tagline">The next 24 hours, by neighborhood</p>
+      <div class="masthead-inner">
+        <p class="eyebrow">National Weather Service forecast</p>
+        <h1>Feels Like LA</h1>
+        <p class="hero-summary" id="hero-summary">Loading the latest LA temperature spread…</p>
+      </div>
     </header>
 
     <main>
-      <section class="finder" aria-labelledby="finder-heading">
-        <h2 class="visually-hidden" id="finder-heading">Choose a place</h2>
-        <div class="search" id="search"></div>
-        <button class="locate" id="locate" type="button">Use my location</button>
-        <p class="locate-status" id="locate-status" role="status"></p>
-      </section>
+      <section class="map-panel" aria-labelledby="map-heading">
+        <h2 class="visually-hidden" id="map-heading">Across LA at this hour</h2>
 
-      <section class="card" id="forecast" aria-labelledby="card-place" aria-busy="true">
-        <div id="card"></div>
+        <div class="finder-row">
+          <div class="finder">
+            <div id="search"></div>
+            <button class="locate" id="locate" type="button">Use my location</button>
+            <p class="locate-status" id="locate-status" role="status"></p>
+          </div>
+        </div>
+
+        <div class="map-frame">
+          <!-- #map-shell holds only the map itself and its legend. A map that cannot
+               start replaces just this, so the search above and the card beside it
+               keep working -- see setMapMessage() in main.ts. -->
+          <div id="map-shell">
+            <div class="map-topbar">
+              <div id="legend" class="legend"></div>
+            </div>
+            <div id="map" role="img"></div>
+          </div>
+
+          <section class="card hero-card" id="forecast" aria-labelledby="card-place" aria-busy="true">
+            <div id="card"></div>
+          </section>
+        </div>
+
+        <div class="slider-panel">
+          <div id="slider"></div>
+        </div>
       </section>
 
       <section class="panel" aria-labelledby="chart-heading">
@@ -35,22 +59,13 @@
         <div id="chart"></div>
       </section>
 
-      <section class="panel map-panel" aria-labelledby="map-heading">
-        <h2 class="panel-heading" id="map-heading">Across LA at this hour</h2>
-        <div id="map-shell">
-          <div id="map" role="img"></div>
-          <div id="legend" class="legend"></div>
-        </div>
-        <div id="slider"></div>
-      </section>
-
       <section class="panel" aria-labelledby="compare-heading">
         <h2 class="panel-heading" id="compare-heading">Compare with another place</h2>
         <div id="compare"></div>
       </section>
-
-      <footer class="notes" id="notes"></footer>
     </main>
+
+    <footer class="site-footer" id="notes"></footer>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
