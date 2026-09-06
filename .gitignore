@@ -19,3 +19,7 @@ data/fixtures/*
 # Frontend
 web/node_modules/
 web/dist/
+
+# web/.env is committed: the Mapbox token in it is a public one, restricted by URL in the
+# Mapbox account rather than by being hidden. A local override stays local.
+web/.env.local

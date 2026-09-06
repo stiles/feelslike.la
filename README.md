@@ -31,6 +31,11 @@ make install       # Python, through uv
 make web-install   # the interface, through npm
 ```
 
+The map draws on a Mapbox Standard basemap. `web/.env` carries the public token and style
+URL; a `web/.env.local` overrides them without touching the repo. Leave
+`VITE_MAPBOX_TOKEN` empty and the map falls back to drawing only this build's own
+geometry, which is a tested path rather than a broken one.
+
 ## Commands
 
 ```sh

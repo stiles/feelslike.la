@@ -84,6 +84,7 @@ async function main() {
     await desktop(browser, origin, wantShots);
     await directLink(browser, origin);
     await keyboard(browser, origin);
+    await withoutTheBasemap(browser, origin, wantShots);
   } finally {
     await browser.close();
   }
@@ -206,7 +207,7 @@ async function mobile(browser, origin, wantShots) {
 
   // A map can start, size itself and report nothing wrong while drawing nothing, so ask
   // it what it rendered rather than trusting that it did.
-  check(await page.$('.maplibregl-canvas'), 'the map canvas never appeared');
+  check(await page.$('.mapboxgl-canvas'), 'the map canvas never appeared');
   await page.waitForFunction(() => (window.feelslike?.map?.drawn().bands ?? 0) > 0, {
     timeout: 15000,
   });
@@ -218,13 +219,26 @@ async function mobile(browser, origin, wantShots) {
   const drawn = await page.evaluate(() => window.feelslike.map.drawn());
   check(drawn.bands > 0, 'the map drew no temperature bands');
   check(drawn.selected > 0, 'the selected place was never outlined on the map');
+  check(drawn.basemap, 'the basemap never loaded');
   notes.push(`map drew ${drawn.bands} band shapes and ${drawn.selected} selected outline parts`);
 
   await checkBandAgreement(page, 'on load');
 
-  const labels = await page.$$eval('.map-label:not([hidden])', (nodes) => nodes.length);
-  check(labels >= 3, `only ${labels} map labels are visible`);
-  notes.push(`map labels visible: ${labels}`);
+  // With a basemap the context labels come from Mapbox and ours stay hidden. The one
+  // label that is always ours is the selected place, which no basemap can know about.
+  await page
+    .waitForFunction(() => document.querySelector('.map-label.selected:not([hidden])'), {
+      timeout: 10000,
+    })
+    .catch(() => undefined);
+  const label = await page.$eval(
+    '.map-label.selected',
+    (node) => (node.hidden ? '' : node.textContent.trim()),
+  );
+  check(label.length > 0, 'the selected place was never labeled on the map');
+  const context = await page.$$eval('.map-label:not(.selected):not([hidden])', (n) => n.length);
+  check(context === 0, `${context} of our own context labels drew over the basemap's`);
+  notes.push(`map labels the selection "${label}", context labels from the basemap`);
 
   const legend = await page.$$eval('.legend-swatch', (nodes) => nodes.length);
   check(legend > 10, `legend has ${legend} classes`);
@@ -303,6 +317,63 @@ async function directLink(browser, origin) {
   await page.close();
 }
 
+/**
+ * Mapbox unreachable: a dead token, a blocked domain, an outage.
+ *
+ * The temperatures come from files this build published, so the map has no business
+ * disappearing when a tile provider does. It should fall back to its own geometry and
+ * bring back the curated labels the basemap had been supplying.
+ */
+async function withoutTheBasemap(browser, origin, wantShots) {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
+  await page.setRequestInterception(true);
+  let blocked = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('mapbox.com')) {
+      blocked += 1;
+      void request.abort();
+    } else {
+      void request.continue();
+    }
+  });
+
+  await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForSelector('.card-number', { timeout: 15000 });
+
+  const value = await page.$eval('.card-number', (node) => node.textContent.trim());
+  check(value.endsWith('°'), `no temperature with Mapbox blocked: ${value}`);
+
+  await page
+    .waitForFunction(
+      () => {
+        const drawn = window.feelslike?.map?.drawn();
+        return drawn && drawn.bands > 0 && !drawn.basemap;
+      },
+      { timeout: 20000 },
+    )
+    .catch(() => undefined);
+
+  const drawn = await page.evaluate(() => window.feelslike?.map?.drawn() ?? null);
+  check(drawn?.bands > 0, 'with Mapbox blocked the map drew no temperature bands');
+  check(drawn?.basemap === false, 'the map claimed a basemap it could not load');
+
+  // Our labels come back, because now nothing else is naming the places.
+  await page.waitForFunction(
+    () => document.querySelectorAll('.map-label:not([hidden])').length >= 3,
+    { timeout: 10000 },
+  );
+  const labels = await page.$$eval('.map-label:not([hidden])', (nodes) => nodes.length);
+  check(labels >= 3, `only ${labels} labels on the map without a basemap`);
+  notes.push(`Mapbox blocked (${blocked} requests): ${drawn?.bands} bands, ${labels} own labels`);
+
+  if (wantShots) {
+    await mkdir(SHOTS, { recursive: true });
+    await page.screenshot({ path: join(SHOTS, 'no-basemap.png'), fullPage: true });
+  }
+  await page.close();
+}
+
 /** With no WebGL the map is impossible; every number still has to be there. */
 async function withoutTheMap(browser, origin, wantShots) {
   const { page, errors } = await open(browser, origin, '/pasadena', { width: 390, height: 844 });
@@ -314,7 +385,7 @@ async function withoutTheMap(browser, origin, wantShots) {
 
   const fallback = await page.$eval('.map-fallback', (node) => node.textContent.trim());
   check(fallback.length > 0, 'a failed map left no explanation');
-  check(!(await page.$('.maplibregl-canvas')), 'a map canvas appeared with WebGL disabled');
+  check(!(await page.$('.mapboxgl-canvas')), 'a map canvas appeared with WebGL disabled');
   notes.push(`without WebGL: Pasadena ${value}, map says "${fallback.slice(0, 60)}…"`);
 
   if (wantShots) {

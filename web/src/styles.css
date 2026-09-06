@@ -425,6 +425,42 @@ a {
     0 0 3px #fefefe;
 }
 
+/* The selected place, the one name the reader is looking for. The basemap labels its own
+   places but has no idea which one is selected, so this sits above them. */
+.map-label.selected {
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.map-label.selected::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 5px 1px -12px;
+  border: 1.5px solid #fefefe;
+  border-radius: 50%;
+  background: #1a1a1a;
+}
+
+/* Mapbox's controls, quieter. The attribution and logo stay: they are a condition of
+   using the tiles. */
+#map-shell .mapboxgl-ctrl-attrib,
+#map-shell .mapboxgl-ctrl-attrib a {
+  font-size: 10px;
+  color: var(--quiet);
+}
+
+#map-shell .mapboxgl-ctrl-logo {
+  opacity: 0.55;
+}
+
+#map-shell .mapboxgl-ctrl-group {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
 .map-fallback {
   margin: 0;
   padding: 24px 18px;

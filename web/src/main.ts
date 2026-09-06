@@ -1,7 +1,7 @@
 // Wiring. One store, one hour, and views that all read from it.
 //
 // Load order is deliberate: the card, chart, slider and comparison come from the main
-// bundle, and the map arrives in a separate chunk afterward. MapLibre is most of the
+// bundle, and the map arrives in a separate chunk afterward. Mapbox GL is most of the
 // JavaScript here, and nothing about a temperature should wait on a map library.
 
 import '@fontsource/roboto/latin-400.css';

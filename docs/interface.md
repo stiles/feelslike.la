@@ -1,7 +1,7 @@
 # The interface
 
 A single page: pick a place, read what it will feel like, scrub the next 24 hours, compare
-with somewhere else. TypeScript and Vite, MapLibre GL for the map, D3 scales and shapes for
+with somewhere else. TypeScript and Vite, Mapbox GL for the map, D3 scales and shapes for
 the chart. It reads the published build and holds no forecast logic of its own.
 
 ![The interface on a phone](images/interface-mobile.png)
@@ -20,27 +20,52 @@ trusting it.
 
 ## Decisions worth recording
 
-**The map uses no basemap.** No tile provider, no glyph server, no API key. Every layer
-comes from this build's own GeoJSON: the county silhouette, the contour bands, place
-outlines. Partly reliability, since the only thing left to fail is a frame fetch. Mostly
-honesty: a street basemap under a 2.5 km forecast grid implies a precision the data does
-not have.
+**The basemap is a Mapbox Standard style, and the bands go in its `middle` slot.** The
+style is `mapbox://styles/stiles/cmiuh91nz003q01su2wd5b64l`: monochrome theme, Roboto to
+match the page, place labels on, points of interest off. What it buys is context the
+county silhouette alone cannot give — water, the neighboring counties a marine layer comes
+from, and collision-managed labels for places the curated list leaves out.
 
-**Labels are HTML, not a symbol layer.** A MapLibre symbol layer needs glyph PBFs from a
-font server, which is the dependency the paragraph above just removed. With a curated list
-of 16 places, a greedy collision pass gives the same sparse result, in the page's own
-webfont, with nothing to fetch. The list is in `config/forecast.toml` and every slug is
-checked against the place index at build time.
+Slot placement is the whole trick. `middle` sits above Standard's roads and below its
+labels, which means the bands can stay fully opaque and still have names on top of them.
+That matters more than it sounds: a semi-transparent choropleth over a gray basemap shows
+the reader a color that is not in the legend, and the legend is the only thing tying a
+fill to a temperature. Opaque fills also hide the roads underneath, so their labels are
+switched off from code — a motorway shield floating over a temperature has nothing to
+attach to. Projection is forced to mercator; the saved style opens on a globe, which is
+the wrong instrument for one county.
 
-**The county silhouette earns its 5.8 KB twice.** It draws the coastline and county line,
-without which an afternoon in the 60s is a pale shape on a pale page with nothing to
-recognize. And it fills the county in the no-data gray beneath the bands, so a cell with
-no forecast reads as a hole rather than as whatever sits behind it.
+**If Mapbox cannot load, the map keeps drawing temperatures.** A dead token, a blocked
+domain, an outage: the style falls back to one built only from this build's own GeoJSON,
+and the curated labels come back to stand in for the basemap's. The forecast is a set of
+files we published, so nothing about reading it should depend on a tile provider being
+reachable. A smoke run with every `mapbox.com` request aborted asserts it, and this is
+what that reader sees:
 
-**MapLibre loads in its own chunk.** It is 286 KB gzipped against 63 KB for everything
-else, so it arrives after the card, chart and slider are on screen. If it never arrives,
-or the browser cannot draw it, the map panel explains itself and every number keeps
-working. A browser check with WebGL disabled asserts exactly that.
+![The map with Mapbox unreachable](images/interface-no-basemap.png)
+
+The token is a public `pk.` one in `web/.env`. It ends up in the bundle wherever it is
+kept, so the protection that matters is a URL restriction on the token in the Mapbox
+account rather than secrecy. With `VITE_MAPBOX_TOKEN` empty the app takes the fallback
+path deliberately, which is how a contributor without a token gets a working map.
+
+**Labels are HTML, not a symbol layer.** The selected place is always labeled by us, in
+the page's own webfont: it is the one name the reader is hunting for, and no basemap knows
+which place is selected. The curated context labels only appear when there is no basemap
+to supply its own, which is what keeps the fallback map readable. The list is in
+`config/forecast.toml` and every slug is checked against the place index at build time.
+
+**The county silhouette earns its 5.8 KB twice.** It draws the county line, and the
+coastline more precisely than the basemap's, so the mask the data was clipped to is the
+edge the reader sees. And it fills the county in the no-data gray beneath the bands, so a
+cell with no forecast reads as a hole rather than as the basemap showing through.
+
+**Mapbox GL loads in its own chunk.** It is 525 KB gzipped against 63 KB for everything
+else, so it arrives after the card, chart and slider are on screen. That is 239 KB more
+than MapLibre, which it replaced: Standard styles use style imports and slots, and no
+other renderer reads them. The cost is deferred, and first paint did not move. If the
+chunk never arrives, or the browser cannot draw it, the map panel explains itself and
+every number keeps working. A browser check with WebGL disabled asserts exactly that.
 
 **Comparisons are computed after rounding.** 71.4° and 70.6° both display as 71°, so
 comparing the stored values would let the card claim a difference it is not showing. Two
@@ -82,6 +107,7 @@ window or the published formula.
 | An old source run | A separately flagged note, because a fresh download can carry a stale forecast |
 | Every hour in the past | The forecast claim is dropped |
 | A map that cannot start | The panel explains; the card and chart are untouched |
+| Mapbox unreachable | The map redraws from our own geometry, labels included |
 | One hour's frame missing | The map says so and points at the card, which still applies |
 
 Source age and refresh age are independent facts and are reported independently. NDFD
@@ -98,9 +124,10 @@ daylight-saving change, and search ranking.
 
 `make web-smoke` drives the built bundle in the installed Chrome against the real published
 build. It checks a phone and a desktop viewport, a direct place link with a comparison in
-the query, an unknown slug, keyboard-only search, arrow keys on the slider, and a run with
-WebGL disabled. It asks the map what it actually drew rather than trusting that it did,
-through a `window.feelslike` handle that is also useful in the console.
+the query, an unknown slug, keyboard-only search, arrow keys on the slider, a run with
+every Mapbox request aborted, and a run with WebGL disabled. It asks the map what it
+actually drew rather than trusting that it did, through a `window.feelslike` handle that
+is also useful in the console.
 
 Two bugs came out of writing those checks, both invisible in a screenshot. The selected
 place was never outlined, because the highlight filter was set against a layer that did not
