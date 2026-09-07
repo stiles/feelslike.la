@@ -18,19 +18,28 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        # Login shell so micromamba's activation (on ~/.bashrc) applies to every step,
+        # not just the one right after it installs GDAL.
+        shell: bash -el {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
       # isobands[gdal313] needs a matching system GDAL: the PyPI `gdal` package is a
-      # thin binding compiled against whatever gdal-config reports, and Ubuntu's default
-      # repos ship something much older than 3.13. The ubuntugis PPA tracks upstream
-      # closely enough to have it.
-      - name: Check available GDAL versions (debug)
-        run: |
-          sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-          sudo apt-get update
-          apt-cache madison libgdal-dev
+      # thin binding compiled against whatever gdal-config reports. Ubuntu's apt repos
+      # (and even the ubuntugis-unstable PPA) top out around 3.11, so GDAL 3.13 itself
+      # comes from conda-forge, which tracks new releases fast. uv then installs into
+      # that env instead of a venv it creates itself.
+      - name: Install GDAL 3.13 via micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: gdal-env
+          create-args: python=3.12 gdal=3.13
+
+      - name: Point uv at the micromamba env
+        run: echo "UV_PROJECT_ENVIRONMENT=${MAMBA_ROOT_PREFIX}/envs/gdal-env" >> "$GITHUB_ENV"
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
