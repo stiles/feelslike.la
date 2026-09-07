@@ -36,7 +36,10 @@ jobs:
         uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: gdal-env
-          create-args: python=3.12 gdal=3.13
+          # libgdal-grib is a separate conda-forge plugin package — the GRIB driver and
+          # its bundled table data (grib2_table_4_5.csv etc.) aren't in the base `gdal`
+          # package, and NDFD data comes over the wire as GRIB2.
+          create-args: python=3.12 gdal=3.13 libgdal-grib
 
       - name: Point uv at the micromamba env
         run: echo "UV_PROJECT_ENVIRONMENT=${MAMBA_ROOT_PREFIX}/envs/gdal-env" >> "$GITHUB_ENV"
@@ -45,11 +48,6 @@ jobs:
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
-
-      - name: Debug GDAL_DATA
-        run: |
-          echo "GDAL_DATA=$GDAL_DATA"
-          ls "$GDAL_DATA" | grep grib2 || echo "no grib2 tables found"
 
       - name: Install dependencies
         run: uv sync --extra publish
