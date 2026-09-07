@@ -144,3 +144,12 @@ function describe(minutes: number): string {
   const hours = Math.round(minutes / 60);
   return `${hours} hour${hours === 1 ? '' : 's'}`;
 }
+
+export function escape(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ??
+      character,
+  );
+}

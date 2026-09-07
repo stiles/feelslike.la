@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check": "tsc --noEmit",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "brand": "node scripts/generate-brand-assets.mjs"
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.5",

@@ -3,7 +3,7 @@
 // Follows the ARIA combobox pattern: the input keeps focus, arrow keys move
 // `aria-activedescendant` through the listbox, Enter commits and Escape closes.
 
-import { escape } from './card';
+import { escape } from './format';
 import type { Place } from './types';
 
 export interface Picker {

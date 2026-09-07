@@ -81,6 +81,8 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
       .y((value) => y(value as number));
 
     const svg = document.createElementNS(NS, 'svg');
+    // A fresh element every render, so the built-in fade-in (see #chart svg in
+    // styles.css) replays on every hour scrub — a soft cross-fade instead of a snap.
     svg.setAttribute('viewBox', `0 0 ${width} ${HEIGHT}`);
     svg.setAttribute('width', String(width));
     svg.setAttribute('height', String(HEIGHT));

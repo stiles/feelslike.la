@@ -9,55 +9,98 @@
       content="What it will feel like across Los Angeles County over the next 24 hours, from National Weather Service forecasts."
     />
     <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#171717" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="canonical" href="https://feelslike.la/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Feels Like LA" />
+    <meta property="og:title" content="Feels Like LA" />
+    <meta
+      property="og:description"
+      content="What it will feel like across Los Angeles County over the next 24 hours, from National Weather Service forecasts."
+    />
+    <meta property="og:image" content="https://feelslike.la/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://feelslike.la/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Feels Like LA" />
+    <meta
+      name="twitter:description"
+      content="What it will feel like across Los Angeles County over the next 24 hours, from National Weather Service forecasts."
+    />
+    <meta name="twitter:image" content="https://feelslike.la/og-image.png" />
   </head>
   <body>
-    <a class="skip-link" href="#forecast">Skip to the forecast</a>
+    <a class="skip-link" href="#hero">Skip to the forecast</a>
 
     <header class="masthead">
       <div class="masthead-inner">
-        <p class="eyebrow">National Weather Service forecast</p>
-        <h1>Feels Like LA</h1>
-        <p class="hero-summary" id="hero-summary">Loading the latest LA temperature spread…</p>
+        <div class="brand-row">
+          <p class="wordmark">Feels like <strong>LA</strong></p>
+          <p class="status-chip" id="status-chip" role="status"></p>
+        </div>
+        <div id="hero" role="region" aria-label="Current reading"></div>
       </div>
     </header>
 
     <main>
-      <section class="map-panel" aria-labelledby="map-heading">
-        <h2 class="visually-hidden" id="map-heading">Across LA at this hour</h2>
-
-        <div class="finder-row">
-          <div class="finder">
-            <div id="search"></div>
-            <button class="locate" id="locate" type="button">Use my location</button>
-            <p class="locate-status" id="locate-status" role="status"></p>
-          </div>
+      <div class="controls-row">
+        <div class="finder">
+          <div id="search"></div>
+          <button class="locate" id="locate" type="button">Use my location</button>
+          <p class="locate-status" id="locate-status" role="status"></p>
         </div>
+        <div class="slider-panel">
+          <div id="slider"></div>
+        </div>
+      </div>
 
-        <div class="map-frame">
+      <div class="dashboard-tabs" id="dashboard-tabs" role="tablist" aria-label="Map or chart">
+        <button
+          type="button"
+          role="tab"
+          data-tab="map"
+          id="tab-map"
+          aria-selected="true"
+          aria-controls="dashboard-map"
+        >
+          Map
+        </button>
+        <button
+          type="button"
+          role="tab"
+          data-tab="chart"
+          id="tab-chart"
+          aria-selected="false"
+          tabindex="-1"
+          aria-controls="dashboard-chart"
+        >
+          Chart
+        </button>
+      </div>
+
+      <div class="dashboard" id="dashboard">
+        <section class="dashboard-map" id="dashboard-map" aria-labelledby="map-heading">
+          <h2 class="visually-hidden" id="map-heading">Across LA at this hour</h2>
           <!-- #map-shell holds only the map itself and its legend. A map that cannot
-               start replaces just this, so the search above and the card beside it
-               keep working -- see setMapMessage() in main.ts. -->
+               start replaces just this, so the rest of the dashboard keeps working --
+               see setMapMessage() in main.ts. -->
           <div id="map-shell">
             <div class="map-topbar">
               <div id="legend" class="legend"></div>
             </div>
             <div id="map" role="img"></div>
           </div>
+        </section>
 
-          <section class="card hero-card" id="forecast" aria-labelledby="card-place" aria-busy="true">
-            <div id="card"></div>
-          </section>
-        </div>
-
-        <div class="slider-panel">
-          <div id="slider"></div>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="chart-heading">
-        <h2 class="panel-heading" id="chart-heading">Next 24 hours</h2>
-        <div id="chart"></div>
-      </section>
+        <section class="dashboard-chart" id="dashboard-chart" aria-labelledby="chart-heading" hidden>
+          <h2 class="panel-heading" id="chart-heading">Next 24 hours</h2>
+          <div id="chart"></div>
+        </section>
+      </div>
 
       <section class="panel" aria-labelledby="compare-heading">
         <h2 class="panel-heading" id="compare-heading">Compare with another place</h2>

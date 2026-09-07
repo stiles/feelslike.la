@@ -1,8 +1,10 @@
-/* Mobile first. The map is the opening act: a slim header, then the map itself, with the
-   search and the reading it produces layered directly on it. Everything else follows. */
+/* Mobile first. A dark masthead carries the live reading — the one number and the one
+   county-wide range that matter right now — full width, before anything else. Below it,
+   search and the hour slider are persistent controls; the map and the chart share the
+   same real estate, as tabs on a narrow screen and side by side once there is room. */
 
 :root {
-  --ink: #262626;
+  --ink: #171717;
   --quiet: #8e8e8e;
   --axis: #a6a6a6;
   --rule: #ececec;
@@ -26,14 +28,14 @@
 body {
   margin: 0;
   background: var(--page);
-  color: var(--ink);
+  color: #262626;
   font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
 main {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 16px 56px;
 }
@@ -78,61 +80,260 @@ a {
   outline-offset: 2px;
 }
 
-/* Header. Full-bleed chrome, not another floating panel, so the page reads as a site
-   rather than a component sitting on a background. One headline: the product name. The
-   dynamic spread sentence is support copy underneath it, not a second headline. */
+/* Masthead. Dark, full-bleed, and the loudest thing on the page: the wordmark is a
+   quiet line of type, and the reading beneath it — place, number, range — is the real
+   headline. This is the one hero; nothing repeats it as an overlay on the map. */
 
 .masthead {
-  background: var(--page);
-  border-bottom: 1px solid var(--rule);
+  background: var(--ink);
+  color: #fff;
 }
 
 .masthead-inner {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 16px 16px 14px;
+  padding: 18px 16px 22px;
 }
 
-.masthead h1 {
-  font-size: clamp(24px, 5vw, 34px);
+.brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 62%);
+}
+
+.wordmark strong {
+  color: #fff;
   font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
 }
 
-.eyebrow {
-  margin: 0 0 2px;
-  color: #737373;
+.status-chip {
+  margin: 0;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 10%);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: rgb(255 255 255 / 78%);
+  white-space: nowrap;
+  cursor: default;
 }
 
-.hero-summary {
-  margin: 6px 0 0;
-  max-width: 42rem;
-  color: #4a4a4a;
-  font-size: 14px;
-  line-height: 1.4;
+.status-chip::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 6px 1px 0;
+  border-radius: 50%;
+  background: #6cc07a;
+  vertical-align: middle;
 }
 
-.hero-summary strong {
-  color: var(--ink);
+.status-current::before {
+  background: #6cc07a;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+.status-aging::before {
+  background: #f0c25c;
+}
+
+.status-stale::before,
+.status-expired::before {
+  background: #e2554f;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* The reading itself. */
+
+.hero-place {
+  margin: 0;
+  font-size: clamp(18px, 3.6vw, 22px);
   font-weight: 700;
+  color: #fff;
 }
 
-/* Map panel. A one-line search sits above the map -- that's the entire cost in copy
-   before the visual starts. The legend rides with the map itself, inside the shell that
-   a map failure can safely replace. The only thing overlaying the map's own pixels is
-   the reading for the selected place, pinned to one corner. */
-
-.map-panel {
-  margin-top: 14px;
+.hero-hour {
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: rgb(255 255 255 / 58%);
 }
 
-.finder-row {
-  margin-bottom: 10px;
+.hero-value {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+
+.hero-number {
+  font-size: clamp(64px, 16vw, 128px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.hero-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 55%);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.hero-secondary {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: rgb(255 255 255 / 78%);
+}
+
+.hero-secondary strong {
+  color: #fff;
+}
+
+.hero-notes {
+  margin-top: 2px;
+}
+
+.hero-note {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgb(255 255 255 / 55%);
+}
+
+.hero-note strong {
+  color: rgb(255 255 255 / 85%);
+}
+
+.hero-problem-place {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.hero-problem-text {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: rgb(255 255 255 / 78%);
+}
+
+.hero-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: rgb(255 255 255 / 55%);
+}
+
+.skeleton-text {
+  color: rgb(255 255 255 / 55%);
+}
+
+/* The spread gauge. What used to be a sentence — "X is the cool end, Y runs hot" — as a
+   scannable strip instead: the county's live range, colored with the same bands the map
+   uses, with the coolest, hottest and (if different) the selected place marked on it. */
+
+.spread {
+  margin-top: 20px;
+}
+
+.spread-track {
+  position: relative;
+  height: 8px;
+  margin: 20px 0 24px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%);
+}
+
+.spread-marker {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-50%, -50%);
+  transition: left 500ms ease;
+}
+
+.spread-marker.hot {
+  flex-direction: column-reverse;
+}
+
+.spread-dot {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--ink);
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 30%);
+}
+
+.spread-marker.selected .spread-dot {
+  width: 13px;
+  height: 13px;
+  background: var(--ink);
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 45%);
+}
+
+/* No text here: the selected place's name and value are already the headline above.
+   This dot is only there to place that number on the county's own range, and a label
+   would as often as not collide with the cool or hot marker it is sitting beside. */
+.spread-marker.selected .spread-label {
+  display: none;
+}
+
+.spread-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 88%);
+  white-space: nowrap;
+}
+
+.spread-caption {
+  margin: 0;
+  font-size: 13px;
+  color: rgb(255 255 255 / 75%);
+}
+
+.spread-caption strong {
+  color: #fff;
+}
+
+/* Persistent controls: search and the hour slider drive the map, the chart and the
+   hero alike, so neither belongs inside a tab. */
+
+.controls-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .finder {
@@ -175,24 +376,6 @@ a {
   min-height: 1.1em;
   font-size: 12px;
   color: var(--quiet);
-}
-
-.map-frame {
-  position: relative;
-}
-
-#map-shell {
-  border: 1px solid rgb(38 38 38 / 10%);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.map-topbar {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--rule);
-  background: var(--panel);
 }
 
 .picker-shell {
@@ -261,7 +444,7 @@ a {
 }
 
 .locate:hover {
-  background: #111;
+  background: #000;
 }
 
 .picker-list {
@@ -310,11 +493,88 @@ a {
   text-transform: none;
 }
 
-/* Map surface. Positioned in its own right, not just inside a positioned #map-shell:
-   .map-labels and .map-reset are appended straight into this element and placed with
-   pixel coordinates from map.project(), which are relative to #map's own box. With the
-   topbar now sitting above #map inside the shell, anchoring to the shell instead would
-   offset every label by the topbar's height. */
+.slider-panel {
+  display: flex;
+  justify-content: center;
+}
+
+.slider-row {
+  width: min(100%, 440px);
+}
+
+#hour {
+  width: 100%;
+  height: 28px;
+  accent-color: var(--ink);
+}
+
+.slider-readout {
+  margin: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.slider-hint {
+  margin: 2px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--quiet);
+}
+
+/* Map / Chart tabs. Live only below the width where the dashboard can show both at
+   once — see the override in the dashboard media query further down. */
+
+.dashboard-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.dashboard-tabs [role='tab'] {
+  appearance: none;
+  padding: 9px 4px;
+  margin-right: 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--quiet);
+  cursor: pointer;
+}
+
+.dashboard-tabs [role='tab'][aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+  font-weight: 700;
+}
+
+.dashboard {
+  margin-top: 12px;
+}
+
+/* Map surface. */
+
+#map-shell {
+  border: 1px solid rgb(38 38 38 / 10%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.map-topbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+/* Positioned in its own right, not just inside a positioned ancestor: .map-labels and
+   .map-reset are appended straight into this element and placed with pixel coordinates
+   from map.project(), which are relative to #map's own box. */
 #map {
   position: relative;
   height: min(64vh, 600px);
@@ -451,125 +711,14 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-/* The forecast reading. The only thing that overlays the map itself: pinned to one
-   corner, sized to leave most of the map visible, and never sharing space with the
-   search bar above it. */
-
-.hero-card {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  z-index: 3;
-  width: min(280px, calc(100% - 24px));
-  margin: 0;
-  padding: 14px 16px;
-  border: 1px solid rgb(38 38 38 / 8%);
-  border-radius: var(--radius);
-  background: rgb(255 255 255 / 94%);
-  backdrop-filter: blur(10px);
-}
-
-.card-place {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-}
-
-.card-hour {
-  margin: 1px 0 0;
-  color: var(--quiet);
-  font-size: 12px;
-}
-
-.card-value {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 6px 0 0;
-}
-
-.card-number {
-  font-size: clamp(48px, 13vw, 76px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.card-unit {
-  font-size: 12px;
-  color: var(--quiet);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.card-secondary {
-  margin: 4px 0 0;
-  font-size: 13px;
-}
-
-.card-peak {
-  margin: 8px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--rule);
-  font-size: 12px;
-}
-
-.card-note,
-.card-hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: var(--quiet);
-}
-
-.card-problem {
-  margin: 6px 0 0;
-  font-size: 14px;
-}
-
-.skeleton-text {
-  color: var(--quiet);
-}
-
-/* Slider. Its own compact row below the map, not a full-bleed control the width of the
-   whole page. */
-
-.slider-panel {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
-}
-
-.slider-row {
-  width: min(100%, 440px);
-}
-
-#hour {
-  width: 100%;
-  height: 28px;
-  accent-color: var(--ink);
-}
-
-.slider-readout {
-  margin: 0;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.slider-hint {
-  margin: 2px 0 0;
-  text-align: center;
-  font-size: 12px;
-  color: var(--quiet);
-}
-
 /* Panels */
 
 .panel {
   margin-top: 34px;
+}
+
+.dashboard-chart .panel-heading {
+  margin-top: 16px;
 }
 
 .panel-heading {
@@ -590,6 +739,16 @@ a {
 #chart svg {
   display: block;
   overflow: visible;
+  animation: chartIn 320ms ease;
+}
+
+@keyframes chartIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .band-fill {
@@ -709,7 +868,7 @@ a {
 }
 
 .site-footer > * {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto 8px;
 }
 
@@ -744,27 +903,56 @@ a {
 
 @media (min-width: 620px) {
   .masthead-inner {
-    padding: 22px 16px 18px;
+    padding: 26px 16px 26px;
   }
 
   #map {
     height: min(70vh, 660px);
     min-height: 460px;
   }
+}
 
-  .hero-card {
-    left: 16px;
-    bottom: 16px;
-    width: min(320px, calc(100% - 32px));
-    padding: 16px 18px;
+/* The dashboard split: map and chart side by side, both above the fold, and the tabs
+   that chose between them on a narrow screen disappear because there is nothing left
+   for them to choose between. */
+@media (min-width: 960px) {
+  .dashboard-tabs {
+    display: none;
   }
 
-  .card-place {
-    font-size: 22px;
+  .dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+    gap: 22px;
+    align-items: start;
   }
 
-  .card-number {
-    font-size: clamp(56px, 9vw, 88px);
+  .dashboard-map[hidden],
+  .dashboard-chart[hidden] {
+    display: block;
+  }
+
+  .dashboard-chart .panel-heading {
+    margin-top: 0;
+  }
+
+  .controls-row {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .finder {
+    flex: 1;
+  }
+
+  .slider-panel {
+    flex: 0 0 320px;
+    justify-content: flex-end;
+  }
+
+  .slider-row {
+    width: 100%;
   }
 }
 

@@ -18,7 +18,7 @@ import mapboxgl, {
 } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-import { escape } from './card';
+import { escape } from './format';
 import type { Bundle, Selection } from './types';
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN ?? '';

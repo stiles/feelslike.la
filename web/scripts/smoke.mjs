@@ -120,7 +120,7 @@ async function open(browser, origin, path, viewport) {
   });
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(`${origin}${path}`, { waitUntil: 'networkidle0', timeout: 30000 });
-  await page.waitForSelector('.card-number', { timeout: 15000 });
+  await page.waitForSelector('.hero-number', { timeout: 15000 });
   return { page, errors };
 }
 
@@ -183,13 +183,13 @@ async function mobile(browser, origin, wantShots) {
     hasTouch: true,
   });
 
-  const card = await page.$eval('#card', (node) => ({
-    place: node.querySelector('.card-place')?.textContent?.trim(),
-    value: node.querySelector('.card-number')?.textContent?.trim(),
-    hour: node.querySelector('.card-hour')?.textContent?.trim(),
+  const hero = await page.$eval('#hero', (node) => ({
+    place: node.querySelector('.hero-place')?.textContent?.trim(),
+    value: node.querySelector('.hero-number')?.textContent?.trim(),
+    hour: node.querySelector('.hero-hour')?.textContent?.trim(),
   }));
-  check(card.value?.endsWith('°'), `card shows no temperature: ${card.value}`);
-  notes.push(`mobile card: ${card.place} ${card.value} at ${card.hour}`);
+  check(hero.value?.endsWith('°'), `hero shows no temperature: ${hero.value}`);
+  notes.push(`mobile hero: ${hero.place} ${hero.value} at ${hero.hour}`);
 
   // Horizontal overflow is the classic mobile break, and it is invisible on desktop.
   const overflow = await page.evaluate(() => ({
@@ -243,6 +243,18 @@ async function mobile(browser, origin, wantShots) {
   const legend = await page.$$eval('.legend-swatch', (nodes) => nodes.length);
   check(legend > 10, `legend has ${legend} classes`);
 
+  // At this width the map and the chart are tabs, not a scroll away from each other.
+  check(await page.$eval('#dashboard-chart', (node) => node.hidden), 'chart tab open on load');
+  await page.click('#tab-chart');
+  await page.waitForSelector('#chart svg', { timeout: 10000 });
+  const chartVisible = await page.$eval('#dashboard-chart', (node) => !node.hidden);
+  const mapHiddenNow = await page.$eval('#dashboard-map', (node) => node.hidden);
+  check(chartVisible && mapHiddenNow, 'the chart tab did not switch panels');
+  await page.click('#tab-map');
+  const mapVisibleAgain = await page.$eval('#dashboard-map', (node) => !node.hidden);
+  check(mapVisibleAgain, 'switching back to the map tab did not restore it');
+  notes.push('map/chart tabs switch panels on mobile');
+
   if (wantShots) {
     await mkdir(SHOTS, { recursive: true });
     await page.screenshot({ path: join(SHOTS, 'mobile.png'), fullPage: true });
@@ -256,14 +268,14 @@ async function desktop(browser, origin, wantShots) {
   const { page, errors } = await open(browser, origin, '/', { width: 1024, height: 900 });
 
   // Scrubbing has to move every number on the page, not just the map.
-  const before = await page.$eval('.card-number', (node) => node.textContent);
-  const hourBefore = await page.$eval('.card-hour', (node) => node.textContent);
+  const before = await page.$eval('.hero-number', (node) => node.textContent);
+  const hourBefore = await page.$eval('.hero-hour', (node) => node.textContent);
   await page.$eval('#hour', (input) => {
     input.value = '20';
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  const after = await page.$eval('.card-number', (node) => node.textContent);
-  const hourAfter = await page.$eval('.card-hour', (node) => node.textContent);
+  const after = await page.$eval('.hero-number', (node) => node.textContent);
+  const hourAfter = await page.$eval('.hero-hour', (node) => node.textContent);
   check(hourBefore !== hourAfter, 'the slider did not change the card hour');
   notes.push(`scrub: ${hourBefore} ${before} to ${hourAfter} ${after}`);
 
@@ -297,7 +309,7 @@ async function directLink(browser, origin) {
     width: 390,
     height: 844,
   });
-  const place = await page.$eval('.card-place', (node) => node.textContent.trim());
+  const place = await page.$eval('.hero-place', (node) => node.textContent.trim());
   check(place === 'Santa Monica', `/santa-monica showed ${place}`);
   const compare = await page.$eval('#compare-place', (node) => node.value);
   check(compare === 'Lancaster', `?compare=lancaster showed ${compare}`);
@@ -305,8 +317,8 @@ async function directLink(browser, origin) {
 
   const nonsense = await browser.newPage();
   await nonsense.goto(`${origin}/not-a-place`, { waitUntil: 'networkidle0' });
-  await nonsense.waitForSelector('.card-number');
-  const fallback = await nonsense.$eval('.card-place', (node) => node.textContent.trim());
+  await nonsense.waitForSelector('.hero-number');
+  const fallback = await nonsense.$eval('.hero-place', (node) => node.textContent.trim());
   const explained = await nonsense.$eval('#locate-status', (node) => node.textContent.trim());
   check(fallback === 'Downtown', `an unknown place fell back to ${fallback}`);
   check(explained.length > 0, 'an unknown place gave no explanation');
@@ -339,9 +351,9 @@ async function withoutTheBasemap(browser, origin, wantShots) {
   });
 
   await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForSelector('.card-number', { timeout: 15000 });
+  await page.waitForSelector('.hero-number', { timeout: 15000 });
 
-  const value = await page.$eval('.card-number', (node) => node.textContent.trim());
+  const value = await page.$eval('.hero-number', (node) => node.textContent.trim());
   check(value.endsWith('°'), `no temperature with Mapbox blocked: ${value}`);
 
   await page
@@ -378,7 +390,7 @@ async function withoutTheBasemap(browser, origin, wantShots) {
 async function withoutTheMap(browser, origin, wantShots) {
   const { page, errors } = await open(browser, origin, '/pasadena', { width: 390, height: 844 });
 
-  const value = await page.$eval('.card-number', (node) => node.textContent.trim());
+  const value = await page.$eval('.hero-number', (node) => node.textContent.trim());
   check(value.endsWith('°'), `no temperature without a map: ${value}`);
   check(await page.$('#chart svg'), 'the chart is missing without a map');
   check(await page.$('#hour'), 'the slider is missing without a map');
@@ -407,7 +419,7 @@ async function keyboard(browser, origin) {
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await page.waitForFunction(
-    () => document.querySelector('.card-place')?.textContent?.trim() === 'Lancaster',
+    () => document.querySelector('.hero-place')?.textContent?.trim() === 'Lancaster',
     { timeout: 5000 },
   );
   notes.push('keyboard search reached Lancaster');

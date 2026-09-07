@@ -1,7 +1,6 @@
 // One comparison place, read at the same valid time as the card.
 
-import { escape } from './card';
-import { degrees, difference, hourLabel } from './format';
+import { degrees, difference, escape, hourLabel } from './format';
 import { createPicker } from './picker';
 import type { Bundle, Selection } from './types';
 

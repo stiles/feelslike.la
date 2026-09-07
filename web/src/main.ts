@@ -9,14 +9,15 @@ import '@fontsource/roboto/latin-500.css';
 import '@fontsource/roboto/latin-700.css';
 import './styles.css';
 
-import { createCard, escape } from './card';
 import { createChart } from './chart';
 import { createCompare } from './compare';
 import { FrameStore, loadBundle, loadCounty, loadOutlines } from './data';
-import { degrees, freshness, hourLabel } from './format';
+import { escape, freshness, hourLabel } from './format';
+import { createHero } from './hero';
 import { CellLookup, resolveCoordinate, resolvePlace } from './lookup';
 import { createPicker } from './picker';
 import { createSlider } from './slider';
+import { createTabs } from './tabs';
 import {
   comparisonFromUrl,
   placeFromUrl,
@@ -25,7 +26,7 @@ import {
   Store,
   writeUrl,
 } from './state';
-import type { Bundle, Selection } from './types';
+import type { Bundle } from './types';
 import type { MapView } from './map';
 
 const DEFAULT_PLACE = 'downtown';
@@ -37,19 +38,19 @@ declare global {
 }
 
 async function start(): Promise<void> {
-  const card = document.querySelector('#card') as HTMLElement;
-  card.innerHTML = '<p class="card-place">Loading the forecast…</p>';
+  const hero = document.querySelector('#hero') as HTMLElement;
+  hero.innerHTML = '<p class="hero-place skeleton-text">Loading the forecast…</p>';
 
   let bundle: Bundle;
   try {
     bundle = await loadBundle();
   } catch (error) {
-    card.innerHTML = `
-      <p class="card-place">Forecast unavailable</p>
-      <p class="card-problem">We could not load the current forecast. ${escape(
+    hero.innerHTML = `
+      <p class="hero-problem-place">Forecast unavailable</p>
+      <p class="hero-problem-text">We could not load the current forecast. ${escape(
         String((error as Error).message ?? error),
       )}</p>
-      <p class="card-hint">Reloading in a minute or two may be enough.</p>
+      <p class="hero-hint">Reloading in a minute or two may be enough.</p>
     `;
     setMapMessage('No map, because there is no forecast to draw.');
     return;
@@ -63,7 +64,7 @@ function run(bundle: Bundle): void {
   const lookup = new CellLookup(bundle.grid);
   const frames = new FrameStore(bundle.base, bundle.manifest);
 
-  const cardView = createCard(document.querySelector('#card') as HTMLElement, bundle);
+  const heroView = createHero(document.querySelector('#hero') as HTMLElement, bundle);
   const chartView = createChart(document.querySelector('#chart') as HTMLElement, bundle);
   const sliderView = createSlider(
     document.querySelector('#slider') as HTMLElement,
@@ -104,13 +105,14 @@ function run(bundle: Bundle): void {
 
   wireGeolocation(bundle, lookup, store);
   writeNotes(bundle);
+  writeStatusChip(bundle);
+  wireTabs();
 
   store.subscribe((state) => {
-    cardView.render(state.selection, state.hour);
+    heroView.render(state.selection, state.hour);
     chartView.render(state.selection, state.hour, state.comparison);
     compareView.render(state.selection, state.hour, state.comparison);
     sliderView.render(state.hour);
-    writeHeroSummary(bundle, state.selection, state.hour);
     mapView?.highlight(state.selection, state.comparison);
     writeUrl(state);
     if (state.problem) announce(state.problem);
@@ -253,54 +255,45 @@ function announce(message: string): void {
   if (status) status.textContent = message;
 }
 
-function writeHeroSummary(bundle: Bundle, selection: Selection | null, hour: number): void {
-  const root = document.querySelector('#hero-summary') as HTMLElement | null;
-  if (!root) return;
+/**
+ * Map / Chart tabs, live only at widths where the dashboard is a single column.
+ *
+ * A tab switch can reveal a panel that was `display: none` a moment ago, so anything
+ * that measured its own width while hidden — the chart, the map — gets a resize nudge
+ * once the browser has actually laid the now-visible panel out.
+ */
+function wireTabs(): void {
+  const root = document.querySelector('#dashboard-tabs') as HTMLElement | null;
+  const mapPanel = document.querySelector('#dashboard-map') as HTMLElement | null;
+  const chartPanel = document.querySelector('#dashboard-chart') as HTMLElement | null;
+  if (!root || !mapPanel || !chartPanel) return;
 
-  const validTime = bundle.manifest.forecast_times[hour];
-  const spread = placeSpread(bundle, hour);
-  if (!validTime || !spread) {
-    root.textContent = 'Pick a neighborhood and scrub the next 24 hours across LA.';
-    return;
-  }
-
-  const selectedValue = selection
-    ? (bundle.cells.get(selection.cellId)?.apparent_temperature_f[hour] ?? null)
-    : null;
-  const selected =
-    selection && selectedValue !== null
-      ? `<strong>${escape(selection.label)}</strong> feels like <strong>${degrees(
-          selectedValue,
-        )}</strong>. `
-      : '';
-  const gap = Math.max(0, Math.round(spread.hot.value) - Math.round(spread.cool.value));
-  root.innerHTML = `${selected}At ${escape(hourLabel(validTime))}, ${escape(
-    spread.cool.name,
-  )} is the cool end at <strong>${degrees(spread.cool.value)}</strong>, while ${escape(
-    spread.hot.name,
-  )} runs <strong>${degrees(spread.hot.value)}</strong>. That is <strong>${gap}° of LA</strong> in one forecast.`;
+  createTabs(
+    root,
+    [
+      { id: 'map', panel: mapPanel },
+      { id: 'chart', panel: chartPanel },
+    ],
+    () => {
+      requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+    },
+  );
 }
 
-function placeSpread(bundle: Bundle, hour: number):
-  | {
-      cool: { name: string; value: number };
-      hot: { name: string; value: number };
-    }
-  | null {
-  let cool: { name: string; value: number } | null = null;
-  let hot: { name: string; value: number } | null = null;
-
-  for (const place of bundle.ordered) {
-    const cellId = bundle.placeCells.places[place.slug]?.cell_id;
-    const value = cellId
-      ? (bundle.cells.get(cellId)?.apparent_temperature_f[hour] ?? null)
-      : null;
-    if (value === null) continue;
-    if (!cool || value < cool.value) cool = { name: place.name, value };
-    if (!hot || value > hot.value) hot = { name: place.name, value };
-  }
-
-  return cool && hot ? { cool, hot } : null;
+/** A compact freshness indicator that rides with the hero, full detail stays in the footer. */
+function writeStatusChip(bundle: Bundle): void {
+  const chip = document.querySelector('#status-chip') as HTMLElement | null;
+  if (!chip) return;
+  const state = freshness(bundle.manifest);
+  const label: Record<typeof state.state, string> = {
+    current: 'Live',
+    aging: 'Forecast aging',
+    stale: 'Data delayed',
+    expired: 'Forecast expired',
+  };
+  chip.textContent = label[state.state];
+  chip.title = state.message;
+  chip.className = `status-chip status-${state.state}`;
 }
 
 function writeNotes(bundle: Bundle): void {
