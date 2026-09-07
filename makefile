@@ -1,4 +1,4 @@
-.PHONY: all install setup build replay fixture prototype test lint clean \
+.PHONY: all install setup build publish replay fixture prototype test lint clean \
 	web-install web-build web-test web-smoke web-fixture web
 
 # `all` chains install, setup and build, and deliberately excludes clean so the
@@ -11,9 +11,16 @@ install:
 setup:
 	mkdir -p data build
 
-# One build from current sources: download, decode, export, validate, publish.
+# One build from current sources: download, decode, export, validate, publish (locally
+# — "publish" here means writing under build/, not uploading anywhere).
 build:
 	uv run python -m feelslike_la.pipeline
+
+# Upload the build latest.json points at to S3, for the deployed web app to read.
+# Needs MY_AWS_ACCESS_KEY_ID, MY_AWS_SECRET_ACCESS_KEY, MY_DEFAULT_REGION in the
+# environment; see .github/workflows/update-forecast.yml for where those come from in CI.
+publish:
+	uv run --extra publish python scripts/publish_to_s3.py
 
 # The same build from a saved fixture, with no network calls to NOAA.
 replay:

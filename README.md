@@ -13,9 +13,12 @@ Methodology is in [`docs/methodology.md`](docs/methodology.md).
 
 ## Status
 
-Milestones 1 through 3 are done: the data is proven, the pipeline builds, validates and
-publishes a complete set of assets, and the interface reads them. Scheduling and
-deployment, milestone 4, are not built.
+Milestones 1 through 4 are done: the data is proven, the pipeline builds, validates and
+publishes a complete set of assets, the interface reads them, and
+[`.github/workflows/update-forecast.yml`](.github/workflows/update-forecast.yml) runs
+that pipeline hourly and publishes to S3. See [Scheduling and deployment](#scheduling-and-deployment)
+below for what still needs setting up outside this repo (secrets, and connecting a host
+to the `web/` app).
 
 - [`docs/prototype-findings.md`](docs/prototype-findings.md): what one real NDFD cycle
   showed about local temperature variation, grid resolution and source freshness.
@@ -40,6 +43,7 @@ geometry, which is a tested path rather than a broken one.
 
 ```sh
 make build       # one build from current sources
+make publish     # upload the build latest.json points at to S3 (needs MY_AWS_* env vars)
 make replay      # the same build from the committed fixture, no NOAA calls
 make fixture     # refresh that fixture from current sources
 make prototype   # milestone 1 charts, maps and findings
@@ -93,6 +97,29 @@ generated.
 The manifest also carries the display palette, one color per temperature class. The map
 fills and the legend are both built from it, so they cannot drift apart, and a class with
 no color would fail validation rather than render as missing data.
+
+## Scheduling and deployment
+
+A GitHub Actions workflow runs the pipeline hourly (`.github/workflows/update-forecast.yml`)
+and publishes `build/` to `s3://stilesdata.com/feelslike.la/`, the same bucket other
+personal projects here publish to. It never touches git — `build/` and `data/` are both
+gitignored, so nothing about a scheduled run needs a commit.
+
+Two things it needs that live outside this repo:
+
+- **Repo secrets** — `MY_AWS_ACCESS_KEY_ID`, `MY_AWS_SECRET_ACCESS_KEY`, `MY_DEFAULT_REGION`,
+  scoped to that bucket. Set with `gh secret set MY_AWS_ACCESS_KEY_ID`, etc., or through
+  the repo's Settings → Secrets and variables → Actions.
+- **A host for `web/`** — `web/vercel.json` and `netlify.toml` (repo root) are both
+  checked in and already point `VITE_DATA_BASE` at the S3 bucket above, so connecting
+  either platform to this GitHub repo is the only manual step. On Vercel, set the
+  project's Root Directory to `web`; Netlify's config declares that itself via `base`.
+
+Trigger a build without waiting for the cron with `gh workflow run update-forecast.yml`,
+or run `make build && make publish` locally with those same three variables in your shell.
+
+A failed run keeps the previously published build exactly where it was — see
+`publish()` in `pipeline.py` — so a bad cycle degrades to stale data, not missing data.
 
 ## Layout
 

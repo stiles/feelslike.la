@@ -1,0 +1,55 @@
+name: Update forecast
+
+# Runs the pipeline hourly and publishes whatever it publishes locally (build/) to S3,
+# for the deployed web app to read via VITE_DATA_BASE. It never touches git: build/ and
+# data/ are both gitignored, so this workflow's only durable output is what lands in S3.
+on:
+  schedule:
+    # :07 past the hour, not :00 — a small offset from everyone else's cron jobs, and
+    # NDFD's own cycle does not land exactly on the hour either.
+    - cron: '7 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-forecast
+  cancel-in-progress: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra publish
+
+      - name: Set up data and build directories
+        run: make setup
+
+      - name: Run the forecast pipeline
+        run: make build
+
+      - name: Publish to S3
+        env:
+          MY_AWS_ACCESS_KEY_ID: ${{ secrets.MY_AWS_ACCESS_KEY_ID }}
+          MY_AWS_SECRET_ACCESS_KEY: ${{ secrets.MY_AWS_SECRET_ACCESS_KEY }}
+          MY_DEFAULT_REGION: ${{ secrets.MY_DEFAULT_REGION }}
+        run: make publish
+
+      - name: Upload build for debugging on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-build
+          path: |
+            build/failed
+            build/*.staging
+          retention-days: 3
+          if-no-files-found: ignore

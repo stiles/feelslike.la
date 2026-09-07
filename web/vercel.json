@@ -1,0 +1,9 @@
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "VITE_DATA_BASE": "https://stilesdata.com/feelslike.la"
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

@@ -1,0 +1,15 @@
+[build]
+base = "web"
+command = "npm run build"
+publish = "dist"
+
+[build.environment]
+VITE_DATA_BASE = "https://stilesdata.com/feelslike.la"
+
+# The app resolves places from the URL path (see web/src/state.ts), so a direct link
+# like /santa-monica has to reach index.html rather than a 404 for a file that isn't
+# there.
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
