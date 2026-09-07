@@ -22,6 +22,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      # isobands[gdal313] needs a matching system GDAL: the PyPI `gdal` package is a
+      # thin binding compiled against whatever gdal-config reports, and Ubuntu's default
+      # repos ship something much older than 3.13. The ubuntugis PPA tracks upstream
+      # closely enough to have it.
+      - name: Install GDAL 3.13
+        run: |
+          sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev
+          gdal-config --version
+
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
