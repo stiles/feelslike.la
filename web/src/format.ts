@@ -42,6 +42,34 @@ export function hourLabel(iso: string): string {
   return `${parts.get('weekday')} ${parts.get('hour')} ${period} ${parts.get('timeZoneName')}`;
 }
 
+/**
+ * "Mon 6 p.m.", with no zone abbreviation.
+ *
+ * Every hour mentioned on the page after the first is this, not `hourLabel`. Saying
+ * "PDT" once, near the time controls, and never again is more legible than stamping it
+ * onto every sentence that names an hour — see the zone note beside #slider.
+ */
+export function weekdayHour(iso: string): string {
+  const parts = new Map(partFormat.formatToParts(new Date(iso)).map((part) => [part.type, part.value]));
+  const period = (parts.get('dayPeriod') ?? '').toLowerCase() === 'am' ? 'a.m.' : 'p.m.';
+  return `${parts.get('weekday')} ${parts.get('hour')} ${period}`;
+}
+
+const fullWeekdayFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: ZONE,
+  weekday: 'long',
+  hour: 'numeric',
+});
+
+/** "Tuesday at 2 p.m.", for the one-sentence peak summary. */
+function weekdayHourFull(iso: string): string {
+  const parts = new Map(
+    fullWeekdayFormat.formatToParts(new Date(iso)).map((part) => [part.type, part.value]),
+  );
+  const period = (parts.get('dayPeriod') ?? '').toLowerCase() === 'am' ? 'a.m.' : 'p.m.';
+  return `${parts.get('weekday')} at ${parts.get('hour')} ${period}`;
+}
+
 /** "2 p.m.", for the chart axis where the day is already established. */
 export function axisHour(iso: string): string {
   const parts = new Map(
@@ -69,6 +97,52 @@ export function peak(series: (number | null)[]): { index: number; value: number 
     if (value !== null && (!best || value > best.value)) best = { index, value };
   });
   return best;
+}
+
+/**
+ * The peak, phrased as one sentence's worth of "when": "Tuesday at 2 p.m.", or "right
+ * now" for the edge case where the hour on screen already is the peak.
+ */
+export function peakLabel(
+  series: (number | null)[],
+  times: string[],
+  currentIndex: number,
+): { value: number; when: string } | null {
+  const high = peak(series);
+  const stamp = high ? times[high.index] : undefined;
+  if (!high || !stamp) return null;
+  return {
+    value: high.value,
+    when: high.index === currentIndex ? 'right now' : weekdayHourFull(stamp),
+  };
+}
+
+const exactFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZoneName: 'short',
+});
+
+/** "Mon, Sep 7, 6:00 PM PDT" — the exact stamp behind a relative "2 hours ago." */
+export function exactTimestamp(iso: string): string {
+  return exactFormat.format(new Date(iso));
+}
+
+const dateFormat = new Intl.DateTimeFormat('en-US', {
+  timeZone: ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
+
+/** "Tue, Sep 8" — the chart's day-transition label, which says what changed rather
+ * than just that midnight happened. */
+export function dateLabel(iso: string): string {
+  return dateFormat.format(new Date(iso));
 }
 
 export type Difference = { word: 'warmer' | 'cooler' | 'the same'; degrees: number };
@@ -143,6 +217,12 @@ function describe(minutes: number): string {
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.round(minutes / 60);
   return `${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
+/** Appends a period unless the text already ends with one — "p.m." carries its own,
+ * and a sentence built by concatenation must not double it into "p.m..". */
+export function endSentence(text: string): string {
+  return text.endsWith('.') ? text : `${text}.`;
 }
 
 export function escape(value: string): string {

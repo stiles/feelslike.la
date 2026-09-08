@@ -1,24 +1,25 @@
-/* Mobile first. A dark masthead carries the live reading — the one number and the one
-   county-wide range that matter right now — full width, before anything else. Below it,
-   search and the hour slider are persistent controls; the map and the chart share the
-   same real estate, as tabs on a narrow screen and side by side once there is room. */
+/* Mobile-first, single column: search, summary, chart, timeline, map, comparison, in
+   that reading order. Above ~960px, a grid places the map, its legend and the timeline
+   in a right-hand column beside the summary/chart/comparison stack on the left — see the
+   grid-template-areas in the @media block near the bottom. Nothing here uses `order` to
+   reshuffle that reading order; the two-column layout only relocates elements via named
+   grid areas, so tab order stays the same as visual order top-to-bottom on mobile and a
+   sensible single pass on desktop. */
 
 :root {
-  --ink: #171717;
-  --quiet: #8e8e8e;
-  --axis: #a6a6a6;
-  --rule: #ececec;
-  --page: #fefefe;
-  --panel: #f7f7f7;
-  --focus: #5194c3;
+  --ink: #1a1a1a;
+  --quiet: #6b6b6b;
+  --axis: #8a8a8a;
+  --rule: #e6e3dd;
+  --page: #fbfaf7;
+  --panel: #f3f1ec;
+  --focus: #2f6f9f;
 
-  /* Two radius tokens, not fourteen. Panels get the smaller one; a handful of true
-     toggle/tag controls get the pill. Nothing else rounds. */
-  --radius: 8px;
-  --radius-lg: 10px;
+  --radius: 10px;
+  --radius-lg: 12px;
   --radius-pill: 999px;
 
-  font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 * {
@@ -28,16 +29,16 @@
 body {
   margin: 0;
   background: var(--page);
-  color: #262626;
+  color: var(--ink);
   font-size: 16px;
-  line-height: 1.45;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
 main {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0 16px 56px;
+  padding: 0 16px 48px;
 }
 
 h1,
@@ -47,7 +48,7 @@ h3 {
 }
 
 a {
-  color: #2f6f9f;
+  color: var(--focus);
 }
 
 .visually-hidden {
@@ -80,316 +81,128 @@ a {
   outline-offset: 2px;
 }
 
-/* Masthead. Dark, full-bleed, and the loudest thing on the page: the wordmark is a
-   quiet line of type, and the reading beneath it — place, number, range — is the real
-   headline. This is the one hero; nothing repeats it as an overlay on the map. */
+/* Masthead. A quiet strip, not a hero of its own — the summary panel below carries the
+   page's one moment of contrast. */
 
+/* Both children are now variable-length sentences — the wordmark names the place on
+   screen (see writeWordmark() in main.ts), and the status chip's stale/aging states are
+   full sentences rather than "NWS forecast." flex-wrap lets either one drop to its own
+   line instead of forcing the other to squeeze; the rare "Unincorporated Santa Monica
+   Mountains LA Feels Like" is what this is for. */
 .masthead {
-  background: var(--ink);
-  color: #fff;
-}
-
-.masthead-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 18px 16px 22px;
-}
-
-.brand-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 16px 8px;
 }
 
 .wordmark {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 62%);
+  color: var(--quiet);
 }
 
 .wordmark strong {
-  color: #fff;
+  color: var(--ink);
   font-weight: 700;
 }
 
 .status-chip {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  padding: 4px 10px 4px 8px;
-  border-radius: var(--radius-pill);
-  background: rgb(255 255 255 / 10%);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgb(255 255 255 / 78%);
-  white-space: nowrap;
+  font-size: 12px;
+  color: var(--quiet);
+  text-align: right;
   cursor: default;
 }
 
-.status-chip::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin: 0 6px 1px 0;
-  border-radius: 50%;
-  background: #6cc07a;
-  vertical-align: middle;
-}
+/* Layout. One column on mobile, in DOM order; two above the desktop breakpoint, by
+   named grid area rather than by reordering elements — see the @media block below. */
 
-.status-current::before {
-  background: #6cc07a;
-  animation: pulse 2.4s ease-in-out infinite;
-}
-
-.status-aging::before {
-  background: #f0c25c;
-}
-
-.status-stale::before,
-.status-expired::before {
-  background: #e2554f;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-/* The reading itself. */
-
-.hero-place {
-  margin: 0;
-  font-size: clamp(18px, 3.6vw, 22px);
-  font-weight: 700;
-  color: #fff;
-}
-
-.hero-hour {
-  margin: 1px 0 0;
-  font-size: 13px;
-  color: rgb(255 255 255 / 58%);
-}
-
-.hero-value {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 0;
-}
-
-.hero-number {
-  font-size: clamp(64px, 16vw, 128px);
-  font-weight: 700;
-  line-height: 0.95;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-}
-
-.hero-unit {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgb(255 255 255 / 55%);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.hero-secondary {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: rgb(255 255 255 / 78%);
-}
-
-.hero-secondary strong {
-  color: #fff;
-}
-
-.hero-notes {
-  margin-top: 2px;
-}
-
-.hero-note {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: rgb(255 255 255 / 55%);
-}
-
-.hero-note strong {
-  color: rgb(255 255 255 / 85%);
-}
-
-.hero-problem-place {
-  margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.hero-problem-text {
-  margin: 4px 0 0;
-  font-size: 14px;
-  color: rgb(255 255 255 / 78%);
-}
-
-.hero-hint {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: rgb(255 255 255 / 55%);
-}
-
-.skeleton-text {
-  color: rgb(255 255 255 / 55%);
-}
-
-/* The spread gauge. What used to be a sentence — "X is the cool end, Y runs hot" — as a
-   scannable strip instead: the county's live range, colored with the same bands the map
-   uses, with the coolest, hottest and (if different) the selected place marked on it. */
-
-.spread {
-  margin-top: 20px;
-}
-
-.spread-track {
-  position: relative;
-  height: 8px;
-  margin: 20px 0 24px;
-  border-radius: var(--radius-pill);
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%);
-}
-
-.spread-marker {
-  position: absolute;
-  top: 50%;
-  left: 0;
+.layout {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  transform: translate(-50%, -50%);
-  transition: left 500ms ease;
+  gap: 28px;
+  margin-top: 8px;
 }
 
-.spread-marker.hot {
-  flex-direction: column-reverse;
-}
+/* Summary panel: search, place name, the big number and the peak line. The one place on
+   the page that keeps the dark treatment — see Priority 2 — because a reader's eye needs
+   one obvious place to land first, and everything in it is the same "what, for where"
+   question. */
 
-.spread-dot {
-  width: 11px;
-  height: 11px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: #fff;
-  border: 2px solid var(--ink);
-  box-shadow: 0 0 0 2px rgb(255 255 255 / 30%);
-}
-
-.spread-marker.selected .spread-dot {
-  width: 13px;
-  height: 13px;
+.summary-panel {
+  padding: 24px 24px 26px;
+  border-radius: var(--radius-lg);
   background: var(--ink);
-  border-color: #fff;
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 45%);
-}
-
-/* No text here: the selected place's name and value are already the headline above.
-   This dot is only there to place that number on the county's own range, and a label
-   would as often as not collide with the cool or hot marker it is sitting beside. */
-.spread-marker.selected .spread-label {
-  display: none;
-}
-
-.spread-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: rgb(255 255 255 / 88%);
-  white-space: nowrap;
-}
-
-.spread-caption {
-  margin: 0;
-  font-size: 13px;
-  color: rgb(255 255 255 / 75%);
-}
-
-.spread-caption strong {
   color: #fff;
-}
-
-/* Persistent controls: search and the hour slider drive the map, the chart and the
-   hero alike, so neither belongs inside a tab. */
-
-.controls-row {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
 }
 
 .finder {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
+/* The same quiet-caption treatment as .legend-title and .hero-peak-label — every other
+   label on the page is a small uppercase caption above its content, and the plain
+   default <label> styling this overrides used to make "Second place" read like an
+   unstyled draft next to "Compare places." */
 .picker-label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--quiet);
 }
 
-/* The main search's own label is redundant with the visible placeholder text in this
-   compact toolbar; the comparison picker below keeps its visible "Second place" label. */
 .finder .picker-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  color: rgb(255 255 255 / 62%);
 }
 
 .finder .picker-shell {
   flex: 1;
   min-width: 200px;
-  max-width: 420px;
+  max-width: 380px;
 }
 
 .locate-status {
   flex-basis: 100%;
-  margin: 0;
+  margin: 4px 0 0;
   min-height: 1.1em;
   font-size: 12px;
-  color: var(--quiet);
+  color: rgb(255 255 255 / 62%);
 }
 
 .picker-shell {
   position: relative;
   display: flex;
   gap: 8px;
-  max-width: 420px;
 }
 
+/* Light by default — the picker is reused as-is for the comparison search on a white
+   panel. The summary panel overrides these to the dark treatment just below, scoped to
+   .finder so the two contexts never fight over the same unscoped rule (that fight was
+   why the comparison search box used to render white-on-white and disappear). */
 .picker-input {
   flex: 1;
   min-width: 0;
-  padding: 9px 13px;
-  border: 1px solid rgb(38 38 38 / 16%);
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: #fff;
   color: var(--ink);
@@ -397,54 +210,69 @@ a {
   font-size: 16px; /* 16px keeps iOS Safari from zooming on focus. */
 }
 
-.picker-clear,
-.locate,
-.suggestion {
+.picker-input::placeholder {
+  color: var(--quiet);
+}
+
+.picker-clear {
   appearance: none;
-  padding: 8px 12px;
-  border: 1px solid rgb(38 38 38 / 16%);
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: #fff;
-  color: var(--ink);
+  color: var(--quiet);
   font: inherit;
   font-size: 13px;
-  cursor: pointer;
-}
-
-.picker-clear:hover,
-.locate:hover,
-.suggestion:hover:not(:disabled) {
-  background: #f0f0f0;
-}
-
-.suggestion {
-  border-radius: var(--radius-pill);
-  background: #f0f0f0;
-  color: #737373;
-  border-color: transparent;
-}
-
-.suggestion.active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
   font-weight: 500;
+  cursor: pointer;
+  align-self: flex-end;
+  margin-top: 20px; /* Lines the button up with the input, whose own label sits above it. */
 }
 
-.suggestion:disabled {
-  opacity: 0.45;
-  cursor: default;
+.picker-clear:hover {
+  background: var(--panel);
 }
 
 .locate {
-  background: var(--ink);
-  color: #fff;
-  border-color: var(--ink);
-  white-space: nowrap;
+  appearance: none;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 6%);
+  color: rgb(255 255 255 / 88%);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  align-self: flex-end;
+  margin-top: 20px; /* Lines the button up with the input, whose own label sits above it. */
 }
 
 .locate:hover {
-  background: #000;
+  background: rgb(255 255 255 / 16%);
+}
+
+/* Dark overrides for the search inside the summary panel only. */
+.finder .picker-input {
+  border-color: rgb(255 255 255 / 22%);
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+.finder .picker-input::placeholder {
+  color: rgb(255 255 255 / 48%);
+}
+
+.finder .picker-clear {
+  border-color: rgb(255 255 255 / 22%);
+  background: transparent;
+  color: rgb(255 255 255 / 88%);
+}
+
+.finder .picker-clear:hover {
+  background: rgb(255 255 255 / 16%);
 }
 
 .picker-list {
@@ -454,14 +282,15 @@ a {
   z-index: 8;
   margin: 4px 0 0;
   padding: 0;
-  width: min(100%, 420px);
+  width: min(100%, 380px);
   max-height: 320px;
   overflow-y: auto;
   list-style: none;
   background: #fff;
   border: 1px solid rgb(38 38 38 / 14%);
   border-radius: var(--radius);
-  box-shadow: 0 6px 18px rgb(38 38 38 / 14%);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 22%);
+  color: var(--ink);
 }
 
 .picker-option {
@@ -493,238 +322,132 @@ a {
   text-transform: none;
 }
 
-.slider-panel {
-  display: flex;
-  justify-content: center;
+/* The reading itself. */
+
+.hero-reading {
+  margin-top: 22px;
 }
 
-.slider-row {
-  width: min(100%, 440px);
-}
-
-#hour {
-  width: 100%;
-  height: 28px;
-  accent-color: var(--ink);
-}
-
-.slider-readout {
+.place-name {
   margin: 0;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: clamp(24px, 4.4vw, 32px);
+  font-weight: 700;
+  color: #fff;
 }
 
-.slider-hint {
+.hero-hour {
   margin: 2px 0 0;
-  text-align: center;
-  font-size: 12px;
-  color: var(--quiet);
-}
-
-/* Map / Chart tabs. Live only below the width where the dashboard can show both at
-   once — see the override in the dashboard media query further down. */
-
-.dashboard-tabs {
-  display: flex;
-  gap: 4px;
-  margin-top: 18px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.dashboard-tabs [role='tab'] {
-  appearance: none;
-  padding: 9px 4px;
-  margin-right: 14px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--quiet);
-  cursor: pointer;
-}
-
-.dashboard-tabs [role='tab'][aria-selected='true'] {
-  color: var(--ink);
-  border-bottom-color: var(--ink);
-  font-weight: 700;
-}
-
-.dashboard {
-  margin-top: 12px;
-}
-
-/* Map surface. */
-
-#map-shell {
-  border: 1px solid rgb(38 38 38 / 10%);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.map-topbar {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--rule);
-  background: var(--panel);
-}
-
-/* Positioned in its own right, not just inside a positioned ancestor: .map-labels and
-   .map-reset are appended straight into this element and placed with pixel coordinates
-   from map.project(), which are relative to #map's own box. */
-#map {
-  position: relative;
-  height: min(64vh, 600px);
-  min-height: 380px;
-  background: var(--page);
-}
-
-.map-labels {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.map-label {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 0 0;
-  margin: -8px 0 0 6px;
-  white-space: nowrap;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  color: #4a4a4a;
-  paint-order: stroke;
-  text-shadow:
-    0 0 3px #fefefe,
-    0 0 3px #fefefe,
-    0 0 3px #fefefe;
-}
-
-/* The selected place, the one name the reader is looking for. The basemap labels its own
-   places but has no idea which one is selected, so this sits above them. */
-.map-label.selected {
-  z-index: 2;
   font-size: 13px;
-  font-weight: 700;
-  color: #1a1a1a;
+  color: rgb(255 255 255 / 58%);
 }
 
-.map-label.selected::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin: 0 5px 1px -12px;
-  border: 1.5px solid #fefefe;
-  border-radius: 50%;
-  background: #1a1a1a;
+/* A compact vertical stack — the label sits directly above the number it names, rather
+   than beside it across a gap that grows with the number's own width. */
+.hero-value {
+  margin: 14px 0 0;
 }
 
-.map-reset {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 5px 9px;
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
-  font: inherit;
-  font-size: 12px;
-  color: #262626;
-  cursor: pointer;
-}
-
-.map-reset:hover {
-  background: #f4f4f4;
-}
-
-/* Mapbox's controls, quieter. The attribution and logo stay: they are a condition of
-   using the tiles. */
-#map-shell .mapboxgl-ctrl-attrib,
-#map-shell .mapboxgl-ctrl-attrib a {
-  font-size: 10px;
-  color: var(--quiet);
-}
-
-#map-shell .mapboxgl-ctrl-logo {
-  opacity: 0.55;
-}
-
-#map-shell .mapboxgl-ctrl-group {
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
-}
-
-.map-fallback {
+.hero-label {
   margin: 0;
-  padding: 24px 18px;
-  color: var(--quiet);
-  font-size: 14px;
-}
-
-/* Legend. A compact strip in the topbar, above the map, not a 14-swatch key beneath it. */
-
-.legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-
-.legend-title {
-  margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--quiet);
-  white-space: nowrap;
+  color: rgb(255 255 255 / 62%);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.legend-scale {
-  display: flex;
-  margin: 0;
-  padding: 0;
-  width: 140px;
-  height: 10px;
-  border-radius: 3px;
-  overflow: hidden;
-  list-style: none;
-}
-
-.legend-scale li {
-  flex: 1;
-  min-width: 0;
-}
-
-.legend-swatch {
-  display: block;
-  height: 100%;
-}
-
-.legend-edge {
-  font-size: 11px;
-  color: var(--axis);
+.hero-number {
+  margin: 2px 0 0;
+  font-size: clamp(72px, 13vw, 108px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
+  color: #fff;
 }
 
-/* Panels */
-
-.panel {
-  margin-top: 34px;
+.hero-secondary {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgb(255 255 255 / 78%);
 }
 
-.dashboard-chart .panel-heading {
+.hero-secondary strong {
+  color: #fff;
+}
+
+.hero-peak {
   margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.hero-peak-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 52%);
+}
+
+.hero-peak-text {
+  margin: 3px 0 0;
+  font-size: 15px;
+  color: rgb(255 255 255 / 88%);
+}
+
+.hero-peak-text strong {
+  color: #fff;
+}
+
+.hero-notes {
+  margin-top: 10px;
+}
+
+.hero-note {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: rgb(255 255 255 / 58%);
+}
+
+.hero-note strong {
+  color: rgb(255 255 255 / 85%);
+}
+
+.hero-problem-text {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: rgb(255 255 255 / 78%);
+}
+
+.skeleton-text {
+  color: rgb(255 255 255 / 55%);
+}
+
+/* Panels: the chart, the map and comparison all share this shell — a light card, the
+   same radius as the summary panel, no nested rounded containers inside them. */
+
+.chart-panel,
+.map-panel,
+.panel {
+  padding: 18px 20px 20px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
 .panel-heading {
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .empty {
@@ -751,12 +474,14 @@ a {
   }
 }
 
-.band-fill {
+.chart-gridline {
+  stroke: var(--rule);
+  stroke-width: 1;
   shape-rendering: crispEdges;
 }
 
 .daybreak {
-  stroke: rgb(38 38 38 / 45%);
+  stroke: rgb(26 26 26 / 30%);
   stroke-width: 1;
   stroke-dasharray: 2 3;
   shape-rendering: crispEdges;
@@ -770,23 +495,29 @@ a {
 }
 
 .cursor {
-  stroke: rgb(38 38 38 / 55%);
+  stroke: rgb(26 26 26 / 45%);
   stroke-width: 1.5;
   shape-rendering: crispEdges;
 }
 
-.series {
+.series,
+.series-casing {
   fill: none;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
+/* A white halo behind each line so it reads clearly over the gridlines — without this
+   rule, an SVG path with no fill set defaults to solid black, and being an open path,
+   the browser closes it into a filled polygon. That filled-black "mountain" (not the
+   faint 6% area fill below) was the chart's biggest visual bug. */
 .series-casing {
-  fill: none;
   stroke: #fff;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  opacity: 0.9;
+}
+
+.series-fill {
+  fill: var(--ink);
+  opacity: 0.06;
 }
 
 .series.primary {
@@ -821,7 +552,7 @@ a {
 .chart-key {
   display: flex;
   gap: 14px;
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   font-size: 13px;
 }
 
@@ -838,121 +569,513 @@ a {
   border-color: #2f6f9f;
 }
 
+.chart-summary {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--quiet);
+}
+
+/* Timeline: one compact toolbar — play button, slider, selected-hour label and sparse
+   anchors — docked to the bottom of the map card rather than a media-player block of
+   its own (see the markup comment in index.html). */
+
+.timeline-panel {
+  flex: 0 0 auto;
+  padding: 14px 20px;
+  border-top: 1px solid var(--rule);
+  background: #fff;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-play {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+
+.slider-play:hover {
+  background: #000;
+}
+
+/* A triangle that becomes two bars when playing, drawn with borders rather than an SVG
+   asset — one shape, one rule, no icon file to keep in sync with the button state. */
+.slider-play-icon {
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 10px solid #fff;
+}
+
+.slider-play.playing .slider-play-icon {
+  width: 4px;
+  height: 13px;
+  margin-left: 0;
+  border: none;
+  border-left: 4px solid #fff;
+  border-right: 4px solid #fff;
+}
+
+.slider-track-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#hour {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.slider-anchors {
+  position: relative;
+  height: 14px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--axis);
+}
+
+.slider-anchors span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.slider-anchors span:first-child {
+  transform: translateX(0);
+}
+
+.slider-anchors span:last-child {
+  transform: translateX(-100%);
+}
+
+.slider-readout {
+  flex: 0 0 auto;
+  margin: 0;
+  min-width: 92px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.zone-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--quiet);
+}
+
+/* Map surface. */
+
+#map-shell {
+  overflow: hidden;
+}
+
+.map-topbar {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+/* Positioned in its own right, not just inside a positioned ancestor: .map-labels and
+   .map-reset are appended straight into this element and placed with pixel coordinates
+   from map.project(), which are relative to #map's own box. */
+#map {
+  position: relative;
+  height: min(58vh, 620px);
+  min-height: 340px;
+  background: var(--page);
+}
+
+.map-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  margin: -8px 0 0 6px;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: #4a4a4a;
+  paint-order: stroke;
+  text-shadow:
+    0 0 3px #fefefe,
+    0 0 3px #fefefe,
+    0 0 3px #fefefe;
+}
+
+/* The selected place, the one name the reader is looking for. A filled pill rather than
+   just a text-shadow halo, so it wins a collision with the basemap's own city label
+   instead of blending into it — see Priority 4, "resolve the label collision." */
+.map-label.selected {
+  z-index: 2;
+  padding: 3px 8px 3px 6px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a1a;
+  text-shadow: none;
+}
+
+.map-label.selected::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 5px 1px 0;
+  border-radius: 50%;
+  background: #1a1a1a;
+}
+
+.map-reset {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.map-reset:hover {
+  background: #f4f4f4;
+}
+
+/* Mapbox's controls, quieter. The attribution and logo stay: they are a condition of
+   using the tiles. */
+#map-shell .mapboxgl-ctrl-attrib,
+#map-shell .mapboxgl-ctrl-attrib a {
+  font-size: 10px;
+  color: var(--quiet);
+}
+
+#map-shell .mapboxgl-ctrl-logo {
+  opacity: 0.55;
+}
+
+#map-shell .mapboxgl-ctrl-group {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 12%);
+}
+
+.map-fallback {
+  margin: 0;
+  padding: 24px 18px;
+  color: var(--quiet);
+  font-size: 14px;
+}
+
+/* Legend. A real scale with intermediate ticks, not just two endpoint labels on a
+   14px-tall bar — see Priority 4. */
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.legend-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--quiet);
+  white-space: nowrap;
+}
+
+.legend-scale-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 320px;
+}
+
+.legend-scale {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  list-style: none;
+}
+
+.legend-scale li {
+  flex: 1;
+  min-width: 0;
+}
+
+.legend-swatch {
+  display: block;
+  height: 100%;
+}
+
+.legend-ticks {
+  position: relative;
+  height: 13px;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--axis);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-ticks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.legend-ticks span:first-child {
+  transform: translateX(0);
+}
+
+.legend-ticks span:last-child {
+  transform: translateX(-100%);
+}
+
 /* Comparison */
 
 .suggestions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
-.compare-readout {
-  margin: 12px 0 0;
-  font-size: 15px;
+.suggestion {
+  appearance: none;
+  padding: 8px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: #4a4a4a;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.suggestion:hover {
+  background: #e9e6de;
+}
+
+.compare-result {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.compare-result-place {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.compare-result-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.compare-result-temp {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.compare-result-diff {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--quiet);
+}
+
+.compare-result-diff strong {
+  color: var(--ink);
+}
+
+.compare-remove {
+  appearance: none;
+  margin-top: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--quiet);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.compare-remove:hover {
+  background: var(--panel);
 }
 
 .compare-problem {
   color: var(--quiet);
 }
 
-/* Footer. Full-bleed site chrome, distinct from the page body, so the page has a bottom
-   the way it now has a top. */
+/* Footer. Compact source line always visible; the fuller method behind a disclosure,
+   not set as running text beside it — see Priority 8. */
 
 .site-footer {
-  margin-top: 40px;
-  padding: 22px 16px 28px;
-  background: var(--ink);
-  color: #c7c7c7;
-  font-size: 12px;
-}
-
-.site-footer > * {
-  max-width: 1100px;
-  margin: 0 auto 8px;
+  max-width: 720px;
+  margin: 40px auto 0;
+  padding: 18px 16px 40px;
+  border-top: 1px solid var(--rule);
+  color: var(--quiet);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .site-footer p {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 
 .site-footer a {
-  color: #9dc4e0;
+  color: var(--focus);
 }
 
 .freshness {
-  color: #fff;
+  color: var(--ink);
 }
 
 .freshness.aging,
 .freshness.stale,
 .freshness.expired {
   padding: 8px 10px;
-  border-left: 3px solid #f18851;
-  background: rgb(255 255 255 / 8%);
+  border-left: 3px solid #b5651d;
+  background: #fbf1e6;
 }
 
 .freshness.expired {
-  border-left-color: #e2554f;
+  border-left-color: #b3261e;
+}
+
+.methodology {
+  margin-top: 10px;
+}
+
+.methodology summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.methodology p {
+  margin: 8px 0 0;
 }
 
 .credit code {
   font-size: 11px;
-  color: #a8a8a8;
+  color: var(--quiet);
 }
 
 @media (min-width: 620px) {
-  .masthead-inner {
-    padding: 26px 16px 26px;
+  #map {
+    height: min(60vh, 640px);
+    min-height: 420px;
+  }
+}
+
+/* The two-column composition: summary, chart and comparison stack on the left; one map
+   card — map, legend and the shared timeline together — fills the right column at the
+   same total height, edge to edge, with no JS measuring. That last part is what
+   .map-panel's align-self: stretch plus its own internal flex column are for: the card
+   is stretched to match the left column's full height, and #map (flex: 1 inside it)
+   absorbs whatever is left after the legend bar and the timeline strip, so the map
+   itself grows or shrinks instead of leaving blank space below the card. Placement is
+   by grid-area, not by DOM order, so tab order stays the mobile reading order (search,
+   summary, chart, map with its docked timeline, compare).
+   The breakpoint sits at 1100px, not the usual ~960px: below that, a 380–440px left
+   column leaves the map too narrow for its own height range, which pushes fitBounds
+   into revealing more of the county than Priority 4 wants by default. Below 1100px the
+   single column gives the map the full width instead — see main.ts's matching
+   matchMedia query, which must stay in sync with this number. */
+@media (min-width: 1100px) {
+  main {
+    padding-inline: 32px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(380px, 440px) minmax(0, 1fr);
+    grid-template-areas:
+      'summary map'
+      'chart map'
+      'compare map';
+    gap: 24px;
+    align-items: start;
+  }
+
+  .summary-panel {
+    grid-area: summary;
+  }
+
+  .chart-panel {
+    grid-area: chart;
+  }
+
+  .compare-panel {
+    grid-area: compare;
+  }
+
+  .map-panel {
+    grid-area: map;
+    align-self: stretch;
+  }
+
+  #map-shell {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
   }
 
   #map {
-    height: min(70vh, 660px);
+    flex: 1;
     min-height: 460px;
   }
 }
 
-/* The dashboard split: map and chart side by side, both above the fold, and the tabs
-   that chose between them on a narrow screen disappear because there is nothing left
-   for them to choose between. */
-@media (min-width: 960px) {
-  .dashboard-tabs {
-    display: none;
-  }
-
-  .dashboard {
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
-    gap: 22px;
-    align-items: start;
-  }
-
-  .dashboard-map[hidden],
-  .dashboard-chart[hidden] {
-    display: block;
-  }
-
-  .dashboard-chart .panel-heading {
-    margin-top: 0;
-  }
-
-  .controls-row {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-  }
-
-  .finder {
-    flex: 1;
-  }
-
-  .slider-panel {
-    flex: 0 0 320px;
-    justify-content: flex-end;
-  }
-
-  .slider-row {
-    width: 100%;
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(400px, 460px) minmax(0, 1fr);
   }
 }
 
@@ -961,16 +1084,16 @@ a {
     padding-inline: 8px;
   }
 
-  .masthead-inner {
+  .masthead {
     padding-inline: 12px;
   }
 
-  #map-shell {
-    border-radius: var(--radius);
+  .summary-panel {
+    padding: 20px 18px 22px;
   }
 
-  .legend-scale {
-    width: 100px;
+  .legend-scale-wrap {
+    max-width: 140px;
   }
 }
 
@@ -980,3 +1103,4 @@ a {
     transition: none !important;
   }
 }
+

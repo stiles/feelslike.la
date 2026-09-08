@@ -9,7 +9,7 @@
       content="What it will feel like across Los Angeles County over the next 24 hours, from National Weather Service forecasts."
     />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#171717" />
+    <meta name="theme-color" content="#fefefe" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="canonical" href="https://feelslike.la/" />
@@ -37,75 +37,53 @@
     <a class="skip-link" href="#hero">Skip to the forecast</a>
 
     <header class="masthead">
-      <div class="masthead-inner">
-        <div class="brand-row">
-          <p class="wordmark">Feels like <strong>LA</strong></p>
-          <p class="status-chip" id="status-chip" role="status"></p>
-        </div>
-        <div id="hero" role="region" aria-label="Current reading"></div>
-      </div>
+      <!-- Names the place on screen, not just the brand — see writeWordmark() in
+           main.ts. "LA Feels Like" until a place resolves, then "Downtown LA Feels
+           Like" or, for a standalone city like Culver City, "Culver City Feels Like"
+           with no redundant "LA." -->
+      <p class="wordmark" id="wordmark">LA <strong>Feels Like</strong></p>
+      <p class="status-chip" id="status-chip" role="status"></p>
     </header>
 
     <main>
-      <div class="controls-row">
-        <div class="finder">
-          <div id="search"></div>
-          <button class="locate" id="locate" type="button">Use my location</button>
-          <p class="locate-status" id="locate-status" role="status"></p>
-        </div>
-        <div class="slider-panel">
-          <div id="slider"></div>
-        </div>
-      </div>
+      <div class="layout">
+        <!-- Search, place name, the big number and the peak line — see hero.ts. The
+             reader's first three questions (where, what does it feel like, when does it
+             peak) answered in one panel, before anything else on the page. -->
+        <div id="hero" class="summary-panel" role="region" aria-label="Current reading"></div>
 
-      <div class="dashboard-tabs" id="dashboard-tabs" role="tablist" aria-label="Map or chart">
-        <button
-          type="button"
-          role="tab"
-          data-tab="map"
-          id="tab-map"
-          aria-selected="true"
-          aria-controls="dashboard-map"
-        >
-          Map
-        </button>
-        <button
-          type="button"
-          role="tab"
-          data-tab="chart"
-          id="tab-chart"
-          aria-selected="false"
-          tabindex="-1"
-          aria-controls="dashboard-chart"
-        >
-          Chart
-        </button>
-      </div>
+        <section class="chart-panel" aria-labelledby="chart-heading">
+          <h2 class="panel-heading" id="chart-heading">Next 24 hours</h2>
+          <div id="chart"></div>
+        </section>
 
-      <div class="dashboard" id="dashboard">
-        <section class="dashboard-map" id="dashboard-map" aria-labelledby="map-heading">
-          <h2 class="visually-hidden" id="map-heading">Across LA at this hour</h2>
-          <!-- #map-shell holds only the map itself and its legend. A map that cannot
-               start replaces just this, so the rest of the dashboard keeps working --
-               see setMapMessage() in main.ts. -->
+        <!-- Map, legend and the shared timeline live in one card, not three — the
+             timeline scrubs both this map and the chart above, so it is docked to the
+             bottom of the map rather than floating in its own box that has nothing of
+             its own height to answer to. #map-shell holds just the map and its legend;
+             a map that cannot start replaces only that div, so the timeline (and the
+             rest of the page) keeps working — see setMapMessage() in main.ts. -->
+        <section class="map-panel" aria-labelledby="map-heading">
+          <h2 class="visually-hidden" id="map-heading">
+            Map of apparent temperature across Los Angeles County at the selected hour
+          </h2>
           <div id="map-shell">
             <div class="map-topbar">
               <div id="legend" class="legend"></div>
             </div>
             <div id="map" role="img"></div>
           </div>
+          <div class="timeline-panel" id="timeline-panel">
+            <div id="slider"></div>
+            <p class="zone-note">All times Pacific.</p>
+          </div>
         </section>
 
-        <section class="dashboard-chart" id="dashboard-chart" aria-labelledby="chart-heading" hidden>
-          <h2 class="panel-heading" id="chart-heading">Next 24 hours</h2>
-          <div id="chart"></div>
+        <section class="panel compare-panel" aria-labelledby="compare-heading">
+          <h2 class="panel-heading" id="compare-heading">Compare places</h2>
+          <div id="compare"></div>
         </section>
       </div>
-
-      <section class="panel" aria-labelledby="compare-heading">
-        <h2 class="panel-heading" id="compare-heading">Compare with another place</h2>
-        <div id="compare"></div>
-      </section>
     </main>
 
     <footer class="site-footer" id="notes"></footer>

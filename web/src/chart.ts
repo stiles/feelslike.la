@@ -1,18 +1,19 @@
 // A compact 24-hour line, with the peak marked and a cursor on the selected hour.
 //
-// No area fill: a fill commits the axis to zero, and a temperature chart zeroed at 0°F
-// squashes the day's variation into a band. The bare line keeps a cropped axis honest.
+// No area fill for the axis's sake, and no rainbow bands behind the line: the plot's job
+// is the day's shape, not a second legend. The map already carries color; this stays
+// neutral so the line is the only thing competing for attention — see Priority 5.
 
 import { extent } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import { line } from 'd3-shape';
 
-import { axisHour, degrees, localHour, peak } from './format';
+import { dateLabel, degrees, difference, localHour, peak, weekdayHour } from './format';
 import type { Bundle, Selection } from './types';
 
 const NS = 'http://www.w3.org/2000/svg';
 const HEIGHT = 190;
-const MARGIN = { top: 22, right: 44, bottom: 26, left: 8 };
+const MARGIN = { top: 28, right: 44, bottom: 26, left: 8 };
 
 export interface ChartView {
   render(selection: Selection | null, hour: number, comparison: string | null): void;
@@ -57,6 +58,7 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
     const series = cell.apparent_temperature_f;
     const compareCell = comparisonCell(bundle, comparison);
     const compareSeries = compareCell?.apparent_temperature_f ?? null;
+    const compareName = comparison ? bundle.places.get(comparison)?.name ?? comparison : null;
 
     const values = [...series, ...(compareSeries ?? [])].filter(
       (value): value is number => value !== null,
@@ -89,44 +91,32 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
     svg.setAttribute('role', 'img');
     svg.setAttribute('aria-label', describe(bundle, selection, series));
 
-    // The map's temperature bands, drawn as horizontal fills behind the line. The line
-    // itself only has to show the day's shape; which band a stretch of it falls in is
-    // the color already established everywhere else on the page.
-    const [domainLow = low - pad, domainHigh = high + pad] = y.domain();
-    for (const band of bundle.manifest.display.bands) {
-      const upper = Math.min(domainHigh, band.upper_f ?? domainHigh);
-      const lower = Math.max(domainLow, band.lower_f ?? domainLow);
-      if (upper <= lower) continue;
-      add(svg, 'rect', {
-        x: MARGIN.left,
-        y: y(upper),
-        width: width - MARGIN.left - MARGIN.right,
-        height: Math.max(0, y(lower) - y(upper)),
-        fill: band.color,
-        opacity: 0.55,
-        class: 'band-fill',
-      });
-    }
-
-    // Tick labels at whole tens. The bands already divide the field; a gridline on top
-    // of them would either vanish against a dark class or fight its color.
+    // Subtle horizontal gridlines and degree labels, on a plain plot background — no
+    // band fills competing with the line for the reader's eye.
     for (const value of y.ticks(4)) {
+      add(svg, 'line', {
+        x1: MARGIN.left,
+        x2: width - MARGIN.right,
+        y1: y(value),
+        y2: y(value),
+        class: 'chart-gridline',
+      });
       add(svg, 'text', { x: width - MARGIN.right + 6, y: y(value) + 4, class: 'tick' }).textContent =
         `${Math.round(value)}°`;
     }
 
-    // Midnight rule, so a curve crossing into tomorrow reads as two days.
+    // Day transition: a date label, not just "midnight" — it says what changed.
     times.forEach((stamp, index) => {
       if (index > 0 && localHour(stamp) === 0) {
         add(svg, 'line', {
           x1: x(index),
           x2: x(index),
-          y1: MARGIN.top - 8,
+          y1: MARGIN.top - 10,
           y2: HEIGHT - MARGIN.bottom,
           class: 'daybreak',
         });
-        add(svg, 'text', { x: x(index) + 4, y: MARGIN.top - 12, class: 'daybreak-label' }).textContent =
-          'midnight';
+        add(svg, 'text', { x: x(index) + 4, y: MARGIN.top - 14, class: 'daybreak-label' }).textContent =
+          dateLabel(stamp);
       }
     });
 
@@ -139,9 +129,22 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
       class: 'cursor',
     });
 
+    // A very faint fill under the primary line only — texture, not a second band of
+    // saturated color.
+    {
+      const area = line<number | null>()
+        .defined((value) => value !== null)
+        .x((_, index) => x(index))
+        .y((value) => y(value as number));
+      const top = area(series) ?? '';
+      const baseY = HEIGHT - MARGIN.bottom;
+      const fillPath = `${top} L ${x(times.length - 1)} ${baseY} L ${x(0)} ${baseY} Z`;
+      add(svg, 'path', { d: fillPath, class: 'series-fill' });
+    }
+
     // A white casing under each line, the same trick the map uses for the selected
-    // outline: the bands behind the line are any color, so the line needs its own
-    // contrast rather than borrowing the background's.
+    // outline: the plot behind the line can vary, so the line needs its own contrast
+    // rather than borrowing the background.
     if (compareSeries) {
       const d = path(compareSeries) ?? '';
       add(svg, 'path', { d, class: 'series-casing', 'stroke-width': 3.4 });
@@ -162,9 +165,10 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
         class: 'peak-dot',
       });
       const anchor = high24.index > times.length * 0.7 ? 'end' : 'start';
+      const labelY = Math.max(MARGIN.top - 10, y(high24.value) - 9);
       add(svg, 'text', {
         x: x(high24.index) + (anchor === 'end' ? -8 : 8),
-        y: y(high24.value) - 9,
+        y: labelY,
         class: 'peak-label',
         'text-anchor': anchor,
       }).textContent = `Peak ${degrees(high24.value)}`;
@@ -183,17 +187,22 @@ export function createChart(root: HTMLElement, bundle: Bundle): ChartView {
         y: HEIGHT - 8,
         class: 'tick',
         'text-anchor': index === times.length - 1 ? 'end' : index === 0 ? 'start' : 'middle',
-      }).textContent = axisHour(stamp);
+      }).textContent = weekdayHour(stamp).replace(/^\w{3}\s/, '');
     });
 
     root.replaceChildren(svg);
-    if (compareCell && comparison) {
-      const name = bundle.places.get(comparison)?.name ?? comparison;
+
+    if (compareCell && comparison && compareName) {
       const key = document.createElement('p');
       key.className = 'chart-key';
-      key.innerHTML = `<span class="key primary">${escapeText(selection.label)}</span><span class="key comparison">${escapeText(name)}</span>`;
+      key.innerHTML = `<span class="key primary">${escapeText(selection.label)}</span><span class="key comparison">${escapeText(compareName)}</span>`;
       root.append(key);
     }
+
+    const summary = document.createElement('p');
+    summary.className = 'chart-summary';
+    summary.textContent = summarize(selection, series, hour, high24, compareName, compareSeries);
+    root.append(summary);
   }
 
   return { render, clear };
@@ -209,10 +218,40 @@ function describe(bundle: Bundle, selection: Selection, series: (number | null)[
   const high = peak(series);
   const first = bundle.manifest.forecast_times[0];
   const last = bundle.manifest.forecast_times[bundle.manifest.forecast_times.length - 1];
-  const window = first && last ? ` from ${axisHour(first)} to ${axisHour(last)}` : '';
+  const window = first && last ? ` from ${weekdayHour(first)} to ${weekdayHour(last)}` : '';
   return high
     ? `Apparent temperature for ${selection.label}${window}, peaking near ${Math.round(high.value)} degrees.`
     : `Apparent temperature for ${selection.label}${window}. No values available.`;
+}
+
+/** A short visible sentence covering the same ground as the line, for anyone who wants
+ * the numbers without reading the chart. */
+function summarize(
+  selection: Selection,
+  series: (number | null)[],
+  hour: number,
+  high: { index: number; value: number } | null,
+  compareName: string | null,
+  compareSeries: (number | null)[] | null,
+): string {
+  const atHour = series[hour];
+  const parts: string[] = [];
+  if (atHour !== null && atHour !== undefined) {
+    parts.push(`${selection.label} ${degrees(atHour)} at the selected hour`);
+  }
+  if (high) parts.push(`peak ${degrees(high.value)}`);
+  if (compareName && compareSeries) {
+    const theirs = compareSeries[hour];
+    const gap = theirs !== undefined ? difference(atHour ?? null, theirs ?? null) : null;
+    if (gap) {
+      parts.push(
+        gap.word === 'the same'
+          ? `about the same as ${compareName}`
+          : `${gap.degrees}° ${gap.word} than ${compareName}`,
+      );
+    }
+  }
+  return parts.join(' · ');
 }
 
 function add(

@@ -184,7 +184,7 @@ async function mobile(browser, origin, wantShots) {
   });
 
   const hero = await page.$eval('#hero', (node) => ({
-    place: node.querySelector('.hero-place')?.textContent?.trim(),
+    place: node.querySelector('.place-name')?.textContent?.trim(),
     value: node.querySelector('.hero-number')?.textContent?.trim(),
     hour: node.querySelector('.hero-hour')?.textContent?.trim(),
   }));
@@ -243,17 +243,16 @@ async function mobile(browser, origin, wantShots) {
   const legend = await page.$$eval('.legend-swatch', (nodes) => nodes.length);
   check(legend > 10, `legend has ${legend} classes`);
 
-  // At this width the map and the chart are tabs, not a scroll away from each other.
-  check(await page.$eval('#dashboard-chart', (node) => node.hidden), 'chart tab open on load');
-  await page.click('#tab-chart');
+  // No Map/Chart tab switch anymore — both are discoverable on a normal scroll, the
+  // chart before the map in reading order.
   await page.waitForSelector('#chart svg', { timeout: 10000 });
-  const chartVisible = await page.$eval('#dashboard-chart', (node) => !node.hidden);
-  const mapHiddenNow = await page.$eval('#dashboard-map', (node) => node.hidden);
-  check(chartVisible && mapHiddenNow, 'the chart tab did not switch panels');
-  await page.click('#tab-map');
-  const mapVisibleAgain = await page.$eval('#dashboard-map', (node) => !node.hidden);
-  check(mapVisibleAgain, 'switching back to the map tab did not restore it');
-  notes.push('map/chart tabs switch panels on mobile');
+  const order = await page.evaluate(() => {
+    const chart = document.querySelector('.chart-panel');
+    const map = document.querySelector('.map-panel');
+    return chart && map ? chart.compareDocumentPosition(map) & Node.DOCUMENT_POSITION_FOLLOWING : 0;
+  });
+  check(order > 0, 'the chart does not precede the map in reading order');
+  notes.push('chart and map both discoverable without a tab switch');
 
   if (wantShots) {
     await mkdir(SHOTS, { recursive: true });
@@ -288,7 +287,8 @@ async function desktop(browser, origin, wantShots) {
 
   // A comparison has to read at the same hour as the card.
   await page.click('.suggestion');
-  const compare = await page.$eval('.compare-readout', (node) => node.textContent.trim());
+  await page.waitForSelector('.compare-result:not([hidden]) .compare-result-diff', { timeout: 10000 });
+  const compare = await page.$eval('.compare-result-diff', (node) => node.textContent.trim());
   check(
     compare.includes(hourAfter.trim()),
     `comparison does not name the selected hour: ${compare.slice(0, 90)}`,
@@ -309,7 +309,7 @@ async function directLink(browser, origin) {
     width: 390,
     height: 844,
   });
-  const place = await page.$eval('.hero-place', (node) => node.textContent.trim());
+  const place = await page.$eval('.place-name', (node) => node.textContent.trim());
   check(place === 'Santa Monica', `/santa-monica showed ${place}`);
   const compare = await page.$eval('#compare-place', (node) => node.value);
   check(compare === 'Lancaster', `?compare=lancaster showed ${compare}`);
@@ -318,7 +318,7 @@ async function directLink(browser, origin) {
   const nonsense = await browser.newPage();
   await nonsense.goto(`${origin}/not-a-place`, { waitUntil: 'networkidle0' });
   await nonsense.waitForSelector('.hero-number');
-  const fallback = await nonsense.$eval('.hero-place', (node) => node.textContent.trim());
+  const fallback = await nonsense.$eval('.place-name', (node) => node.textContent.trim());
   const explained = await nonsense.$eval('#locate-status', (node) => node.textContent.trim());
   check(fallback === 'Downtown', `an unknown place fell back to ${fallback}`);
   check(explained.length > 0, 'an unknown place gave no explanation');
@@ -419,7 +419,7 @@ async function keyboard(browser, origin) {
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
   await page.waitForFunction(
-    () => document.querySelector('.hero-place')?.textContent?.trim() === 'Lancaster',
+    () => document.querySelector('.place-name')?.textContent?.trim() === 'Lancaster',
     { timeout: 5000 },
   );
   notes.push('keyboard search reached Lancaster');

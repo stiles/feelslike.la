@@ -4,20 +4,19 @@
 // bundle, and the map arrives in a separate chunk afterward. Mapbox GL is most of the
 // JavaScript here, and nothing about a temperature should wait on a map library.
 
-import '@fontsource/roboto/latin-400.css';
-import '@fontsource/roboto/latin-500.css';
-import '@fontsource/roboto/latin-700.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-700.css';
 import './styles.css';
 
 import { createChart } from './chart';
 import { createCompare } from './compare';
 import { FrameStore, loadBundle, loadCounty, loadOutlines } from './data';
-import { escape, freshness, hourLabel } from './format';
+import { escape, exactTimestamp, freshness, weekdayHour } from './format';
 import { createHero } from './hero';
 import { CellLookup, resolveCoordinate, resolvePlace } from './lookup';
-import { createPicker } from './picker';
+import { createPicker, type Picker } from './picker';
 import { createSlider } from './slider';
-import { createTabs } from './tabs';
 import {
   comparisonFromUrl,
   placeFromUrl,
@@ -26,7 +25,7 @@ import {
   Store,
   writeUrl,
 } from './state';
-import type { Bundle } from './types';
+import type { Bundle, Selection } from './types';
 import type { MapView } from './map';
 
 const DEFAULT_PLACE = 'downtown';
@@ -39,18 +38,18 @@ declare global {
 
 async function start(): Promise<void> {
   const hero = document.querySelector('#hero') as HTMLElement;
-  hero.innerHTML = '<p class="hero-place skeleton-text">Loading the forecast…</p>';
+  hero.innerHTML = '<p class="place-name skeleton-text">Loading the forecast…</p>';
 
   let bundle: Bundle;
   try {
     bundle = await loadBundle();
   } catch (error) {
     hero.innerHTML = `
-      <p class="hero-problem-place">Forecast unavailable</p>
+      <p class="place-name">Forecast unavailable</p>
       <p class="hero-problem-text">We could not load the current forecast. ${escape(
         String((error as Error).message ?? error),
       )}</p>
-      <p class="hero-hint">Reloading in a minute or two may be enough.</p>
+      <p class="hero-note">Reloading in a minute or two may be enough.</p>
     `;
     setMapMessage('No map, because there is no forecast to draw.');
     return;
@@ -77,10 +76,10 @@ function run(bundle: Bundle): void {
     (comparison) => store.update({ comparison }),
   );
 
-  createPicker(document.querySelector('#search') as HTMLElement, {
+  const picker = createPicker(document.querySelector('#search') as HTMLElement, {
     id: 'place-search',
-    label: 'Find a place',
-    placeholder: 'Neighborhood, city or area',
+    label: 'Your place',
+    placeholder: 'LA city or neighborhood',
     places: bundle.ordered,
     onSelect: selectPlace,
   });
@@ -103,12 +102,15 @@ function run(bundle: Bundle): void {
   let drawnFrame: GeoJSON.FeatureCollection | null = null;
   let frameToken = 0;
 
-  wireGeolocation(bundle, lookup, store);
+  wireGeolocation(bundle, lookup, store, picker);
   writeNotes(bundle);
   writeStatusChip(bundle);
-  wireTabs();
 
+  let lastSelection = store.current.selection;
   store.subscribe((state) => {
+    if (state.selection !== lastSelection) sliderView.stop();
+    lastSelection = state.selection;
+    writeWordmark(bundle, state.selection);
     heroView.render(state.selection, state.hour);
     chartView.render(state.selection, state.hour, state.comparison);
     compareView.render(state.selection, state.hour, state.comparison);
@@ -210,8 +212,9 @@ function setMapMessage(message: string): void {
   if (shell) shell.innerHTML = `<p class="map-fallback">${message}</p>`;
 }
 
-function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store): void {
+function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picker: Picker): void {
   const button = document.querySelector('#locate') as HTMLButtonElement;
+  const label = button.textContent ?? 'Use my location';
 
   if (!('geolocation' in navigator)) {
     button.hidden = true;
@@ -220,12 +223,14 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store): void
 
   // Asked for only on this click, and the resulting coordinate never reaches the URL.
   button.addEventListener('click', () => {
-    announce('Asking your browser for your location…');
+    announce('Locating…');
     button.disabled = true;
+    button.textContent = 'Locating…';
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         button.disabled = false;
+        button.textContent = label;
         const { longitude, latitude } = position.coords;
         const outlines = await loadOutlines(bundle).catch(() => null);
         const resolved = resolveCoordinate(bundle, lookup, longitude, latitude, outlines);
@@ -235,10 +240,17 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store): void
         }
         announce('');
         rememberPlace(null);
+        // The picker is the one view the store does not drive directly — everything
+        // else (hero, map, chart, slider readout) redraws from state, but the search
+        // box only changes when someone types in it or commits an option. Without this,
+        // pressing the button visibly does nothing where a reader is looking: the box
+        // they just used still shows whatever they typed before, or nothing at all.
+        picker.setValue(resolved.selection.label);
         store.update({ selection: resolved.selection, problem: null });
       },
       (error) => {
         button.disabled = false;
+        button.textContent = label;
         announce(
           error.code === error.PERMISSION_DENIED
             ? 'No problem. Search for your neighborhood instead.'
@@ -256,46 +268,50 @@ function announce(message: string): void {
 }
 
 /**
- * Map / Chart tabs, live only at widths where the dashboard is a single column.
+ * The masthead names the place on screen — "Downtown LA Feels Like" — rather than
+ * carrying a fixed brand name above a page that is about to say the same thing again in
+ * the summary panel below it.
  *
- * A tab switch can reveal a panel that was `display: none` a moment ago, so anything
- * that measured its own width while hidden — the chart, the map — gets a resize nudge
- * once the browser has actually laid the now-visible panel out.
+ * A standalone city drops the redundant "LA": Culver City and Beverly Hills are not Los
+ * Angeles, so "Culver City LA Feels Like" would misname them. Neighborhoods and
+ * unincorporated areas keep it, because "Del Rey Feels Like" on its own does not say
+ * where Del Rey is.
  */
-function wireTabs(): void {
-  const root = document.querySelector('#dashboard-tabs') as HTMLElement | null;
-  const mapPanel = document.querySelector('#dashboard-map') as HTMLElement | null;
-  const chartPanel = document.querySelector('#dashboard-chart') as HTMLElement | null;
-  if (!root || !mapPanel || !chartPanel) return;
-
-  createTabs(
-    root,
-    [
-      { id: 'map', panel: mapPanel },
-      { id: 'chart', panel: chartPanel },
-    ],
-    () => {
-      requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
-    },
-  );
+function writeWordmark(bundle: Bundle, selection: Selection | null): void {
+  const wordmark = document.querySelector('#wordmark') as HTMLElement | null;
+  if (!wordmark) return;
+  const place = selection?.slug ? bundle.places.get(selection.slug) : null;
+  const name = selection ? escape(selection.label) : null;
+  wordmark.innerHTML =
+    name === null
+      ? 'LA <strong>Feels Like</strong>'
+      : place?.source_type === 'standalone-city'
+        ? `${name} <strong>Feels Like</strong>`
+        : `${name} LA <strong>Feels Like</strong>`;
 }
 
-/** A compact freshness indicator that rides with the hero, full detail stays in the footer. */
+/**
+ * Plain freshness metadata, not a status indicator.
+ *
+ * A pulsing dot beside a word reads as a live sensor, and nothing on this page is one —
+ * see freshness() in format.ts. The visible text is the same sentence used in the
+ * footer's fuller note; the title attribute adds the exact timestamp for anyone who
+ * wants more precision than "2 hours ago."
+ */
 function writeStatusChip(bundle: Bundle): void {
   const chip = document.querySelector('#status-chip') as HTMLElement | null;
   if (!chip) return;
   const state = freshness(bundle.manifest);
-  const label: Record<typeof state.state, string> = {
-    current: 'Live',
-    aging: 'Forecast aging',
-    stale: 'Data delayed',
-    expired: 'Forecast expired',
-  };
-  chip.textContent = label[state.state];
-  chip.title = state.message;
+  const reference = bundle.manifest.forecast_reference_times[0];
+  chip.textContent = state.state === 'current' ? 'NWS forecast' : state.message;
+  chip.title = reference
+    ? `${state.message} Issued ${exactTimestamp(reference)}.`
+    : state.message;
   chip.className = `status-chip status-${state.state}`;
 }
 
+/** A compact source line, with the fuller method behind a disclosure rather than set as
+ * running text — see Priority 8: a footer should not read as a second hero. */
 function writeNotes(bundle: Bundle): void {
   const notes = document.querySelector('#notes') as HTMLElement;
   const state = freshness(bundle.manifest);
@@ -303,27 +319,29 @@ function writeNotes(bundle: Bundle): void {
   const last = bundle.manifest.forecast_times[bundle.manifest.forecast_times.length - 1];
 
   const coverage = bundle.manifest.complete_24h
-    ? `Covering ${escape(hourLabel(first ?? ''))} through ${escape(hourLabel(last ?? ''))}.`
-    : `Covering ${bundle.manifest.forecast_times.length} hours only: ${escape(
+    ? `Covers ${escape(weekdayHour(first ?? ''))} through ${escape(weekdayHour(last ?? ''))}.`
+    : `Covers ${bundle.manifest.forecast_times.length} hours only: ${escape(
         bundle.manifest.coverage_note,
       )}.`;
 
   notes.innerHTML = `
-    <p class="freshness ${state.state}">${escape(state.message)} ${coverage}</p>
-    <p>
-      Feels like uses the National Weather Service’s apparent-temperature forecast, which
-      combines temperature, humidity and wind. Local shade and sunshine can change how it
-      feels. Values come from a 2.5 km forecast grid, so one number covers a wide area
-      rather than a single block.
-    </p>
-    <p class="credit">
-      Forecasts from the
-      <a href="https://www.weather.gov/documentation/services-web-api">National Weather
-      Service</a> National Digital Forecast Database. Place boundaries from
-      <a href="https://github.com/stiles/la-geography">la-geography</a>, derived from the
-      Los Angeles Times’ Mapping LA project. Build
-      <code>${escape(bundle.manifest.build_id)}</code>.
-    </p>
+    <p class="freshness ${state.state}">${escape(state.message)} ${coverage} Values are a
+      forecast for a 2.5 km area, not a live sensor reading.</p>
+    <details class="methodology">
+      <summary>How this works</summary>
+      <p>
+        Feels like uses the National Weather Service’s apparent-temperature forecast, which
+        combines temperature, humidity and wind. Local shade and sunshine can change how it
+        feels. Values come from a 2.5 km forecast grid, so one number covers a wide area
+        rather than a single block.
+      </p>
+      <p class="credit">
+        Forecasts from the
+        <a href="https://www.weather.gov/documentation/services-web-api">National Weather
+        Service</a> National Digital Forecast Database. Place boundaries from
+        <a href="https://whatsmyla.com">WhatsMyLA.com</a>. Read <a href="https://github.com/stiles/feelslike.la">more about the data</a>.
+      </p>
+    </details>
   `;
 }
 

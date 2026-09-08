@@ -1,8 +1,9 @@
 // The countywide map.
 //
 // The basemap is a Mapbox Standard style, so the reader gets water, neighboring counties
-// and collision-managed place labels in the same Roboto the page uses. Our layers go into
-// Standard's `middle` slot: above the roads, below the labels. That ordering is what lets
+// and collision-managed place labels for free — in Mapbox's own basemap type, not the
+// page's, since a style's text-font isn't something a page's CSS reaches. Our layers go
+// into Standard's `middle` slot: above the roads, below the labels. That ordering is what lets
 // the bands stay fully opaque, which in turn is what lets the legend be truthful. A
 // semi-transparent choropleth shows the reader a color that is not in the key.
 //
@@ -26,22 +27,23 @@ const STYLE =
   import.meta.env.VITE_MAPBOX_STYLE ?? 'mapbox://styles/stiles/cmiuh91nz003q01su2wd5b64l';
 
 /**
- * The opening view: metropolitan Los Angeles, not the county's legal extent.
+ * The opening view: the San Fernando Valley down through the South Bay, not the county's
+ * legal extent.
  *
- * The San Gabriels across the top, the Ventura county line and Point Mugu on the west,
- * Chino Hills and the Orange County beaches on the east and south. It is where nearly
- * everyone who opens this lives, and it is where the interesting gradient is: forty
- * degrees between the beach and the valley on a September afternoon.
+ * The card beside this map is taller than it is wide, so the map is too — this bbox is
+ * close to square (roughly 69km by 70km) rather than the basin's own wide, short shape,
+ * because fitBounds zooms out to whichever dimension is tighter. A wide bbox in a tall
+ * container reveals extra land above and below what's asked for, not just to the sides:
+ * that is what used to push Lancaster and Catalina into the opening view.
  *
  * What it leaves out is deliberate. The county reaches to the Antelope Valley and out to
- * San Clemente Island, and framing all of that makes the basin a smear across the middle
- * of a tall, mostly empty map. Lancaster, Palmdale, Acton and Avalon are all still in the
- * place index and still searchable; the map pans to a selection that starts off screen,
- * and the reset control brings this view back.
+ * San Clemente Island, and Ventura's Fillmore and San Bernardino's Ontario are context,
+ * not the story. All of them are still in the place index and still searchable; the map
+ * pans to a selection that starts off screen, and the reset control brings this view back.
  */
 const LA_VIEW: [[number, number], [number, number]] = [
-  [-119.15, 33.61],
-  [-117.52, 34.48],
+  [-118.7, 33.7],
+  [-117.95, 34.33],
 ];
 
 // Read from the style at build time and overridden here rather than in Studio, because
@@ -332,25 +334,26 @@ function layers(
       paint: { 'fill-color': bandColors, 'fill-opacity': 1 },
     },
     {
-      id: 'band-edges',
-      type: 'line',
-      source: 'frame',
-      slot,
-      paint: { 'line-color': '#FEFEFE', 'line-width': 0.4, 'line-opacity': 0.5 },
-    },
-    {
       id: 'place-lines',
       type: 'line',
       source: 'outlines',
       slot,
-      paint: { 'line-color': '#262626', 'line-width': 0.3, 'line-opacity': 0.16 },
+      // Invisible at the opening zoom, where 270-odd neighborhood boundaries would just
+      // be noise on top of the temperature field; they fade in once the reader has
+      // zoomed or selected a place close enough for them to be useful context rather
+      // than clutter — see Priority 4, "hide most neighborhood outlines at initial zoom."
+      paint: {
+        'line-color': '#262626',
+        'line-width': 0.3,
+        'line-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 0, 10, 0.16],
+      },
     },
     {
       id: 'county-line',
       type: 'line',
       source: 'county',
       slot,
-      paint: { 'line-color': '#7d97a8', 'line-width': 0.9 },
+      paint: { 'line-color': '#9a9a9a', 'line-width': 0.75 },
     },
     {
       id: 'selected-casing',
@@ -545,26 +548,46 @@ function empty(): GeoJSON.FeatureCollection {
 /**
  * The legend, drawn from the manifest so it always describes the published classes.
  *
- * A compact gradient strip rather than fourteen labeled swatches: this sits in the
- * topbar above the map, and a legend that wide would push the map itself below the
- * fold. Each band's full label is still available on hover/focus via `title`, and the
- * scale's two end values anchor the reader without one label per class.
+ * A wider gradient strip with several intermediate tick values, not just two endpoint
+ * labels on a bar too thin to read precisely — see Priority 4. Each band's full label
+ * is still available on hover/focus via `title`. The scale is fixed to the published
+ * breaks and never rescales with the hour, so a color always means the same value.
  */
 export function createLegend(root: HTMLElement, bundle: Bundle): void {
   const bands = bundle.manifest.display.bands;
   const breaks = bundle.manifest.band_breaks_f;
-  const low = breaks[0];
-  const high = breaks[breaks.length - 1];
+  const low = breaks[0] as number;
+  const high = breaks[breaks.length - 1] as number;
+  const span = high - low;
+
+  // A handful of interior breaks, not all of them: with a dozen-plus bands, a tick per
+  // break collides at this width. Roughly four interior ticks reads cleanly at both the
+  // narrow mobile width and the wider desktop legend.
+  const interiorBreaks = breaks.slice(1, -1);
+  const stride = Math.max(1, Math.ceil(interiorBreaks.length / 4));
+  const ticks = interiorBreaks.filter((_, index) => index % stride === 0);
+
   root.innerHTML = `
-    <p class="legend-title">Feels like</p>
-    <span class="legend-edge">${low}°</span>
-    <ul class="legend-scale" title="Degrees Fahrenheit. The scale never changes with the hour.">
-      ${bands
-        .map(
-          (band) => `<li title="${escape(band.label)}"><span class="legend-swatch" style="background:${band.color}"></span></li>`,
-        )
-        .join('')}
-    </ul>
-    <span class="legend-edge">${high}°+</span>
+    <p class="legend-title">Feels like (°F)</p>
+    <div class="legend-scale-wrap">
+      <ul class="legend-scale" title="Degrees Fahrenheit. The scale never changes with the hour.">
+        ${bands
+          .map(
+            (band) =>
+              `<li title="${escape(band.label)}"><span class="legend-swatch" style="background:${band.color}"></span></li>`,
+          )
+          .join('')}
+      </ul>
+      <div class="legend-ticks" aria-hidden="true">
+        <span style="left:0%">${Math.round(low)}°</span>
+        ${ticks
+          .map(
+            (value) =>
+              `<span style="left:${(((value as number) - low) / span) * 100}%">${Math.round(value as number)}°</span>`,
+          )
+          .join('')}
+        <span style="left:100%">${Math.round(high)}°+</span>
+      </div>
+    </div>
   `;
 }
