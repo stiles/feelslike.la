@@ -108,16 +108,27 @@ export function createSlider(
 }
 
 /** Start, the first midnight, the first noon and the endpoint — sparse anchors rather
- * than a label per hour, positioned at their real fraction of the track. */
+ * than a label per hour, positioned at their real fraction of the track.
+ *
+ * The 24-hour window starts "now," not at midnight, so where Midnight and Noon land
+ * shifts every hour — sometimes right next to Start or End (e.g. a window that starts
+ * at 1 p.m. puts the next Noon just an hour before End). Skip a mark rather than let it
+ * collide with a neighbor already on the track; Start and End are the fixed bounds and
+ * always win. */
 function anchors(times: string[], last: number): string {
   if (last <= 0) return '';
+  const MIN_GAP = 0.1; // minimum fraction of track width between adjacent labels
+
   const marks = new Map<number, string>();
   marks.set(0, 'Start');
-  const midnight = times.findIndex((stamp, index) => index > 0 && localHour(stamp) === 0);
-  if (midnight > 0 && midnight < last) marks.set(midnight, 'Midnight');
-  const noon = times.findIndex((stamp) => localHour(stamp) === 12);
-  if (noon > 0 && noon < last && !marks.has(noon)) marks.set(noon, 'Noon');
   marks.set(last, 'End');
+  const fits = (index: number) =>
+    [...marks.keys()].every((other) => Math.abs(index - other) / last >= MIN_GAP);
+
+  const midnight = times.findIndex((stamp, index) => index > 0 && localHour(stamp) === 0);
+  if (midnight > 0 && midnight < last && fits(midnight)) marks.set(midnight, 'Midnight');
+  const noon = times.findIndex((stamp) => localHour(stamp) === 12);
+  if (noon > 0 && noon < last && !marks.has(noon) && fits(noon)) marks.set(noon, 'Noon');
 
   return [...marks.entries()]
     .sort((a, b) => a[0] - b[0])
