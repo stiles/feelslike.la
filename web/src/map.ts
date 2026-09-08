@@ -111,6 +111,11 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
     // The map is a companion to the card, not the primary control, and a scroll that
     // zooms instead of scrolling the page is the wrong default on a phone.
     scrollZoom: false,
+    // A one-finger touch pans the map instead of scrolling the page underneath it —
+    // the same reasoning as scrollZoom above, for touch. Requiring a second finger to
+    // move the map (Mapbox's own fix for this, matching Google Maps' default) leaves a
+    // single finger free to scroll past the map like any other part of the page.
+    cooperativeGestures: true,
     // Mapbox attribution stays. It is a condition of using their tiles, and the
     // credit line in the footer covers the forecast and the boundaries separately.
     attributionControl: true,
