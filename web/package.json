@@ -10,7 +10,8 @@
     "test": "vitest run",
     "check": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
-    "brand": "node scripts/generate-brand-assets.mjs"
+    "brand": "node scripts/generate-brand-assets.mjs",
+    "sitemap": "node scripts/generate-sitemap.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

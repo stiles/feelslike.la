@@ -111,6 +111,7 @@ function run(bundle: Bundle): void {
     if (state.selection !== lastSelection) sliderView.stop();
     lastSelection = state.selection;
     writeWordmark(bundle, state.selection);
+    writeTitle(bundle, state.selection);
     heroView.render(state.selection, state.hour);
     chartView.render(state.selection, state.hour, state.comparison);
     compareView.render(state.selection, state.hour, state.comparison);
@@ -292,6 +293,24 @@ function writeWordmark(bundle: Bundle, selection: Selection | null): void {
       : place?.source_type === 'standalone-city'
         ? `<span class="wordmark-place">${name}</span> <strong>Feels Like</strong>`
         : `<span class="wordmark-place">${name}</span> LA <strong>Feels Like</strong>`;
+}
+
+/**
+ * The tab title, plain text and unescaped (it never touches innerHTML), same naming
+ * rule as the wordmark above. A generic "Feels Like LA" on every tab is a missed
+ * signal twice over: for a reader with several places open at once, and for a crawler
+ * that lands directly on /del-rey and would otherwise see no title distinguishing it
+ * from the homepage.
+ */
+function writeTitle(bundle: Bundle, selection: Selection | null): void {
+  const place = selection?.slug ? bundle.places.get(selection.slug) : null;
+  const name = selection?.label ?? null;
+  document.title =
+    name === null
+      ? 'Feels Like LA'
+      : place?.source_type === 'standalone-city'
+        ? `${name} Feels Like | Feels Like LA`
+        : `${name} LA Feels Like | Feels Like LA`;
 }
 
 /**
