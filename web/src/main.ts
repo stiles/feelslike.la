@@ -218,7 +218,7 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picke
   // "Locating…" never wipes out the icon the way overwriting the button's own
   // textContent would.
   const labelEl = button.querySelector('.locate-label') as HTMLElement;
-  const label = labelEl.textContent ?? 'Use my location';
+  const label = labelEl.textContent ?? 'My location';
 
   if (!('geolocation' in navigator)) {
     button.hidden = true;

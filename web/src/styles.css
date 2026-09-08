@@ -715,13 +715,13 @@ a {
   transform: translateX(-100%);
 }
 
+/* Above the row, not beside it — see the comment atop slider.ts. Full width, so its
+   length (short "Tue 6 p.m." or long "Wednesday 12 p.m.") never steals space from the
+   track next to it. */
 .slider-readout {
-  flex: 0 0 auto;
-  margin: 0;
-  min-width: 150px;
-  text-align: right;
-  font-size: 14px;
-  font-weight: 500;
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1147,8 +1147,18 @@ a {
     padding: 20px 18px 22px;
   }
 
+  /* Stacked, not side by side — sharing a row with "Feels like (°F)" left the scale
+     with barely 200px on a phone, too narrow for its own tick labels not to crowd the
+     100°/110°+ pair at the high end. Full width on its own line gives it the topbar's
+     whole span instead. */
+  .legend {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
   .legend-scale-wrap {
-    max-width: 140px;
+    max-width: none;
   }
 }
 

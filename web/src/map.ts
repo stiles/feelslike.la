@@ -569,7 +569,18 @@ export function createLegend(root: HTMLElement, bundle: Bundle): void {
   // narrow mobile width and the wider desktop legend.
   const interiorBreaks = breaks.slice(1, -1);
   const stride = Math.max(1, Math.ceil(interiorBreaks.length / 4));
-  const ticks = interiorBreaks.filter((_, index) => index % stride === 0);
+  // A stride starting at index 0 can land its first pick right next to the low
+  // endpoint — e.g. 50° and 55°, five degrees apart while every other tick is fifteen —
+  // and no width of scale bar fixes two adjacent labels fighting over 8% of it. An
+  // endpoint label only needs room on its inward side (it's anchored outward, at 0% or
+  // 100%), so half the normal tick-to-tick gap is enough headroom to drop just that
+  // crowded case without also dropping a tick that was never the problem.
+  const edgeGap = stride / interiorBreaks.length / 2;
+  const ticks = interiorBreaks.filter((value, index) => {
+    if (index % stride !== 0) return false;
+    const position = ((value as number) - low) / span;
+    return position > edgeGap && position < 1 - edgeGap;
+  });
 
   root.innerHTML = `
     <p class="legend-title">Feels like (°F)</p>

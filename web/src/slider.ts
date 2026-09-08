@@ -3,9 +3,12 @@
 // not a control. Press play and the forecast animates itself; the reader learns the
 // mechanism by watching it run, not by reading about it.
 //
-// One compact toolbar: play button, track, selected-hour label, sparse anchors below the
-// track. This is the single control behind the hero, the map and the chart's cursor —
-// see Priority 6 — so it never resets on its own when a place changes or a frame loads.
+// The selected-hour label sits on its own line above the track, not beside it — a fixed
+// label width next to the track was eating a large share of a mobile card's horizontal
+// space, leaving little for the one thing a reader actually drags. Below the label: play
+// button, track, sparse anchors under the track. This is the single control behind the
+// hero, the map and the chart's cursor — see Priority 6 — so it never resets on its own
+// when a place changes or a frame loads.
 
 import { localHour, weekdayHourLong } from './format';
 import type { Manifest } from './types';
@@ -27,6 +30,7 @@ export function createSlider(
   const times = manifest.forecast_times;
   const last = times.length - 1;
   root.innerHTML = `
+    <p class="slider-readout" id="hour-readout" aria-live="polite"></p>
     <div class="slider-row">
       <button type="button" class="slider-play" id="slider-play" aria-label="Play the next 24 hours">
         <span class="slider-play-icon" aria-hidden="true"></span>
@@ -44,7 +48,6 @@ export function createSlider(
         />
         <div class="slider-anchors" aria-hidden="true">${anchors(times, last)}</div>
       </div>
-      <p class="slider-readout" id="hour-readout" aria-live="polite"></p>
     </div>
   `;
 

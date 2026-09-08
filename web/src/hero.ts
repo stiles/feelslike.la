@@ -17,7 +17,7 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
       <div id="search"></div>
       <button class="locate" id="locate" type="button">
         <span class="locate-icon" aria-hidden="true"></span>
-        <span class="locate-label">Use my location</span>
+        <span class="locate-label">My location</span>
       </button>
     </div>
     <p class="locate-status" id="locate-status" role="status"></p>
