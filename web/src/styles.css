@@ -160,9 +160,13 @@ a {
   color: #fff;
 }
 
+/* nowrap, not wrap: the search box's min-width plus the locate button used to be
+   just wide enough to force the button onto its own row on a narrow phone — no failure
+   mode worth keeping, since the search box can shrink (see .picker-input's min-width: 0)
+   further than it ever needs to before that would happen. */
 .finder {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: 10px;
 }
@@ -249,6 +253,7 @@ a {
 .locate {
   appearance: none;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 7px;
   height: 44px;
@@ -260,6 +265,7 @@ a {
   font: inherit;
   font-size: 13px;
   font-weight: 400;
+  white-space: nowrap;
   cursor: pointer;
   align-self: flex-end;
   margin-top: 20px; /* Lines the button up with the input, whose own label sits above it. */
@@ -1159,6 +1165,14 @@ a {
 
   .legend-scale-wrap {
     max-width: none;
+  }
+
+  /* The 200px floor that's fine everywhere wider leaves no room beside the locate
+     button on the narrowest phones now that .finder no longer wraps it to a second
+     row — see .finder above. The input can afford to shrink this much; it still
+     shrinks further on its own via .picker-input's min-width: 0. */
+  .finder .picker-shell {
+    min-width: 130px;
   }
 }
 
