@@ -3,11 +3,14 @@ name: Update forecast
 # Runs the pipeline hourly and publishes whatever it publishes locally (build/) to S3,
 # for the deployed web app to read via VITE_DATA_BASE. It never touches git: build/ and
 # data/ are both gitignored, so this workflow's only durable output is what lands in S3.
+#
+# No `schedule` trigger. GitHub's own docs say the schedule event "can be delayed during
+# periods of high loads" and dropped runs are not retried or reported — in practice, on a
+# private low-traffic repo, that meant multi-hour gaps rather than the 5–30 minutes the
+# docs describe. An external cron service calls workflow_dispatch on this workflow every
+# hour instead, since dispatch-triggered runs skip that best-effort queue entirely. See
+# docs/scheduling.md for the external trigger's setup.
 on:
-  schedule:
-    # :07 past the hour, not :00 — a small offset from everyone else's cron jobs, and
-    # NDFD's own cycle does not land exactly on the hour either.
-    - cron: '7 * * * *'
   workflow_dispatch:
 
 concurrency:

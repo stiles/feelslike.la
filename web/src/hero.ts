@@ -11,6 +11,22 @@ export interface HeroView {
   render(selection: Selection | null, hour: number): void;
 }
 
+/**
+ * The map's own band color for a temperature, not a separate scale — same breaks
+ * (`band_breaks_f`) and palette (`display.bands`) the fill layer and legend already use,
+ * so a color here always means what it means everywhere else on the page.
+ */
+function bandColor(bundle: Bundle, value: number | null): string | null {
+  if (value === null) return null;
+  const breaks = bundle.manifest.band_breaks_f;
+  let index = 0;
+  for (const brk of breaks) {
+    if (value < brk) break;
+    index += 1;
+  }
+  return bundle.manifest.display.bands[index]?.color ?? null;
+}
+
 export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
   root.innerHTML = `
     <div class="finder">
@@ -57,6 +73,7 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
     reading.hidden = true;
     problem.hidden = false;
     problemText.textContent = message;
+    root.style.setProperty('--band-color', 'transparent');
   }
 
   function render(selection: Selection | null, hourIndex: number): void {
@@ -83,6 +100,10 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
     // on every line that mentions a time.
     hour.textContent = weekdayHourLong(validTime);
     tweenDegrees(number, apparent);
+    // A soft wash of the map's own band color behind the number — see .summary-panel's
+    // background in styles.css — rather than recoloring the panel itself, which would
+    // put its legibility at the mercy of whichever of 14 colors happens to be current.
+    root.style.setProperty('--band-color', bandColor(bundle, apparent) ?? 'transparent');
 
     const same = whole(apparent) !== null && whole(apparent) === whole(air);
     secondary.innerHTML =

@@ -153,10 +153,20 @@ a {
    one obvious place to land first, and everything in it is the same "what, for where"
    question. */
 
+/* --band-color is set per render in hero.ts, from the same breaks and palette the map's
+   fill layer and legend use — a wash, not a repaint: the panel is still var(--ink) at
+   its base, tinted rather than replaced, so its legibility never depends on which of 14
+   colors happens to be current. */
 .summary-panel {
   padding: 24px 24px 26px;
   border-radius: var(--radius-lg);
-  background: var(--ink);
+  background:
+    radial-gradient(
+      130% 150% at 0% 0%,
+      color-mix(in srgb, var(--band-color, transparent) 50%, transparent),
+      transparent 65%
+    ),
+    var(--ink);
   color: #fff;
 }
 
