@@ -58,24 +58,24 @@
         </section>
 
         <!-- Map, legend and the shared timeline live in one card, not three — the
-             timeline scrubs both this map and the chart above, so it is docked to the
-             bottom of the map rather than floating in its own box that has nothing of
-             its own height to answer to. #map-shell holds just the map and its legend;
+             timeline scrubs both this map and the chart above, so it is docked above
+             the map rather than floating in its own box that has nothing of its own
+             height to answer to. #map-shell holds just the map and its legend;
              a map that cannot start replaces only that div, so the timeline (and the
              rest of the page) keeps working — see setMapMessage() in main.ts. -->
         <section class="map-panel" aria-labelledby="map-heading">
           <h2 class="visually-hidden" id="map-heading">
             Map of apparent temperature across Los Angeles County at the selected hour
           </h2>
+          <div class="timeline-panel" id="timeline-panel">
+            <div id="slider"></div>
+            <p class="zone-note">All times Pacific.</p>
+          </div>
           <div id="map-shell">
             <div class="map-topbar">
               <div id="legend" class="legend"></div>
             </div>
             <div id="map" role="img"></div>
-          </div>
-          <div class="timeline-panel" id="timeline-panel">
-            <div id="slider"></div>
-            <p class="zone-note">All times Pacific.</p>
           </div>
         </section>
 

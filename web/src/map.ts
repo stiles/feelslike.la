@@ -56,6 +56,10 @@ const BASEMAP_CONFIG = {
   showTransitLabels: false,
   // A flat data map. Extruded buildings at this zoom are noise at best.
   show3dObjects: false,
+  // Inter is both the page's own font (see main.ts) and one of Mapbox Standard's
+  // supported basemap fonts, so the neighborhood labels read as one typeface with the
+  // rest of the page instead of Mapbox's default.
+  font: 'Inter',
 };
 
 export interface MapView {

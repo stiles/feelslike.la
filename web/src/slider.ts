@@ -7,7 +7,7 @@
 // track. This is the single control behind the hero, the map and the chart's cursor —
 // see Priority 6 — so it never resets on its own when a place changes or a frame loads.
 
-import { localHour, weekdayHour } from './format';
+import { localHour, weekdayHourLong } from './format';
 import type { Manifest } from './types';
 
 export interface SliderView {
@@ -94,7 +94,7 @@ export function createSlider(
   function render(hour: number): void {
     if (Number(input.value) !== hour) input.value = String(hour);
     const stamp = times[hour];
-    const label = stamp ? weekdayHour(stamp) : '';
+    const label = stamp ? weekdayHourLong(stamp) : '';
     readout.textContent = label;
     // The visible readout is the accessible one too, so a screen reader hears the same
     // hour a sighted reader sees rather than "14 of 23".

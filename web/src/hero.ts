@@ -4,7 +4,7 @@
 // should never require scrolling past it.
 
 import { tweenDegrees } from './animate';
-import { degrees, endSentence, escape, peakLabel, weekdayHour, whole } from './format';
+import { degrees, endSentence, escape, peakLabel, weekdayHourLong, whole } from './format';
 import type { Bundle, Selection } from './types';
 
 export interface HeroView {
@@ -15,7 +15,10 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
   root.innerHTML = `
     <div class="finder">
       <div id="search"></div>
-      <button class="locate" id="locate" type="button">Use my location</button>
+      <button class="locate" id="locate" type="button">
+        <span class="locate-icon" aria-hidden="true"></span>
+        <span class="locate-label">Use my location</span>
+      </button>
     </div>
     <p class="locate-status" id="locate-status" role="status"></p>
 
@@ -78,7 +81,7 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
     place.textContent = selection.label;
     // The zone abbreviation appears once, near the timeline (see #timeline-panel), not
     // on every line that mentions a time.
-    hour.textContent = weekdayHour(validTime);
+    hour.textContent = weekdayHourLong(validTime);
     tweenDegrees(number, apparent);
 
     const same = whole(apparent) !== null && whole(apparent) === whole(air);

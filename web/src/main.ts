@@ -78,8 +78,8 @@ function run(bundle: Bundle): void {
 
   const picker = createPicker(document.querySelector('#search') as HTMLElement, {
     id: 'place-search',
-    label: 'Your place',
-    placeholder: 'LA city or neighborhood',
+    label: "Find a city or neighborhood",
+    placeholder: 'Santa Monica, Venice...',
     places: bundle.ordered,
     onSelect: selectPlace,
   });
@@ -214,7 +214,11 @@ function setMapMessage(message: string): void {
 
 function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picker: Picker): void {
   const button = document.querySelector('#locate') as HTMLButtonElement;
-  const label = button.textContent ?? 'Use my location';
+  // The icon beside this label is permanent — swap the label span's text only, so
+  // "Locating…" never wipes out the icon the way overwriting the button's own
+  // textContent would.
+  const labelEl = button.querySelector('.locate-label') as HTMLElement;
+  const label = labelEl.textContent ?? 'Use my location';
 
   if (!('geolocation' in navigator)) {
     button.hidden = true;
@@ -225,12 +229,12 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picke
   button.addEventListener('click', () => {
     announce('Locating…');
     button.disabled = true;
-    button.textContent = 'Locating…';
+    labelEl.textContent = 'Locating…';
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         button.disabled = false;
-        button.textContent = label;
+        labelEl.textContent = label;
         const { longitude, latitude } = position.coords;
         const outlines = await loadOutlines(bundle).catch(() => null);
         const resolved = resolveCoordinate(bundle, lookup, longitude, latitude, outlines);
@@ -250,7 +254,7 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picke
       },
       (error) => {
         button.disabled = false;
-        button.textContent = label;
+        labelEl.textContent = label;
         announce(
           error.code === error.PERMISSION_DENIED
             ? 'No problem. Search for your neighborhood instead.'
@@ -286,8 +290,8 @@ function writeWordmark(bundle: Bundle, selection: Selection | null): void {
     name === null
       ? 'LA <strong>Feels Like</strong>'
       : place?.source_type === 'standalone-city'
-        ? `${name} <strong>Feels Like</strong>`
-        : `${name} LA <strong>Feels Like</strong>`;
+        ? `<span class="wordmark-place">${name}</span> <strong>Feels Like</strong>`
+        : `<span class="wordmark-place">${name}</span> LA <strong>Feels Like</strong>`;
 }
 
 /**

@@ -45,9 +45,10 @@ export function hourLabel(iso: string): string {
 /**
  * "Mon 6 p.m.", with no zone abbreviation.
  *
- * Every hour mentioned on the page after the first is this, not `hourLabel`. Saying
- * "PDT" once, near the time controls, and never again is more legible than stamping it
- * onto every sentence that names an hour — see the zone note beside #slider.
+ * Every hour mentioned on the page after the first drops the zone, in favor of
+ * `hourLabel`'s once-only stamp near the time controls — see the zone note beside
+ * #slider. This abbreviated weekday is for compact spots (the chart axis, the compare
+ * panel); `weekdayHourLong` below spells it out where there's room for one hour alone.
  */
 export function weekdayHour(iso: string): string {
   const parts = new Map(partFormat.formatToParts(new Date(iso)).map((part) => [part.type, part.value]));
@@ -68,6 +69,21 @@ function weekdayHourFull(iso: string): string {
   );
   const period = (parts.get('dayPeriod') ?? '').toLowerCase() === 'am' ? 'a.m.' : 'p.m.';
   return `${parts.get('weekday')} at ${parts.get('hour')} ${period}`;
+}
+
+/**
+ * "Tuesday 2 p.m.", with the weekday spelled out.
+ *
+ * `weekdayHour`'s "Tue" reads fine packed into a chart axis or a compact comparison
+ * line, but the two places that put a single hour on its own — the hero's readout and
+ * the slider's — have the room to say it plainly instead of abbreviating it.
+ */
+export function weekdayHourLong(iso: string): string {
+  const parts = new Map(
+    fullWeekdayFormat.formatToParts(new Date(iso)).map((part) => [part.type, part.value]),
+  );
+  const period = (parts.get('dayPeriod') ?? '').toLowerCase() === 'am' ? 'a.m.' : 'p.m.';
+  return `${parts.get('weekday')} ${parts.get('hour')} ${period}`;
 }
 
 /** "2 p.m.", for the chart axis where the day is already established. */
@@ -134,12 +150,12 @@ export function exactTimestamp(iso: string): string {
 
 const dateFormat = new Intl.DateTimeFormat('en-US', {
   timeZone: ZONE,
-  weekday: 'short',
+  weekday: 'long',
   month: 'short',
   day: 'numeric',
 });
 
-/** "Tue, Sep 8" — the chart's day-transition label, which says what changed rather
+/** "Tuesday, Sep 8" — the chart's day-transition label, which says what changed rather
  * than just that midnight happened. */
 export function dateLabel(iso: string): string {
   return dateFormat.format(new Date(iso));

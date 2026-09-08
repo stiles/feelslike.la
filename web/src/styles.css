@@ -104,7 +104,7 @@ a {
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -114,6 +114,18 @@ a {
 .wordmark strong {
   color: var(--ink);
   font-weight: 700;
+}
+
+/* The place, not "Feels Like," is the part that changes with every search — underline
+   it so the one variable word in a fixed phrase reads as the answer to "where," not as
+   equal-weight boilerplate. */
+.wordmark-place {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--focus);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 .status-chip {
@@ -236,6 +248,9 @@ a {
 
 .locate {
   appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   height: 44px;
   padding: 0 14px;
   border: 1px solid rgb(255 255 255 / 22%);
@@ -252,6 +267,31 @@ a {
 
 .locate:hover {
   background: rgb(255 255 255 / 16%);
+}
+
+/* A target, not a search icon — this button asks for a coordinate, and looking like an
+   attached "go" button beside the search box invites someone who just typed a place
+   name to click it expecting search results instead of a permission prompt. Drawn with
+   borders rather than an SVG asset, same as .slider-play-icon above. */
+.locate-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.locate-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* Dark overrides for the search inside the summary panel only. */
@@ -543,10 +583,17 @@ a {
   stroke-width: 1.8;
 }
 
+/* A page-colored halo, drawn under the glyphs rather than around the whole box, so the
+   label stays legible if its position ever lands on a gridline (see .chart-gridline)
+   instead of the plot's blank space above the line. */
 .peak-label {
   fill: var(--ink);
   font-size: 12px;
   font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--page);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 .chart-key {
@@ -576,13 +623,13 @@ a {
 }
 
 /* Timeline: one compact toolbar — play button, slider, selected-hour label and sparse
-   anchors — docked to the bottom of the map card rather than a media-player block of
-   its own (see the markup comment in index.html). */
+   anchors — docked above the map card rather than a media-player block of its own (see
+   the markup comment in index.html). */
 
 .timeline-panel {
   flex: 0 0 auto;
   padding: 14px 20px;
-  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
   background: #fff;
 }
 
@@ -671,7 +718,7 @@ a {
 .slider-readout {
   flex: 0 0 auto;
   margin: 0;
-  min-width: 92px;
+  min-width: 150px;
   text-align: right;
   font-size: 14px;
   font-weight: 500;
@@ -733,9 +780,13 @@ a {
 
 /* The selected place, the one name the reader is looking for. A filled pill rather than
    just a text-shadow halo, so it wins a collision with the basemap's own city label
-   instead of blending into it — see Priority 4, "resolve the label collision." */
+   instead of blending into it — see Priority 4, "resolve the label collision." A wider
+   offset than the base .map-label's, on top of that: the basemap's city labels (e.g.
+   "Los Angeles") tend to sit right above a downtown-ish reference point, and we have no
+   way to ask Mapbox where its own label landed, so the safest fix is distance. */
 .map-label.selected {
   z-index: 2;
+  margin: 10px 0 0 12px;
   padding: 3px 8px 3px 6px;
   border-radius: var(--radius-pill);
   background: #fff;
@@ -1018,7 +1069,7 @@ a {
    same total height, edge to edge, with no JS measuring. That last part is what
    .map-panel's align-self: stretch plus its own internal flex column are for: the card
    is stretched to match the left column's full height, and #map (flex: 1 inside it)
-   absorbs whatever is left after the legend bar and the timeline strip, so the map
+   absorbs whatever is left after the timeline strip and the legend bar, so the map
    itself grows or shrinks instead of leaving blank space below the card. Placement is
    by grid-area, not by DOM order, so tab order stays the mobile reading order (search,
    summary, chart, map with its docked timeline, compare).
@@ -1029,6 +1080,10 @@ a {
    matchMedia query, which must stay in sync with this number. */
 @media (min-width: 1100px) {
   main {
+    padding-inline: 32px;
+  }
+
+  .masthead {
     padding-inline: 32px;
   }
 
