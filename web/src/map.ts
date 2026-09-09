@@ -333,14 +333,14 @@ function layers(
       slot,
       // Under the bands, so a cell with no forecast reads as a gray hole instead of
       // showing the basemap through it.
-      paint: { 'fill-color': bundle.manifest.display.no_data_color, 'fill-opacity': 1 },
+      paint: { 'fill-color': bundle.manifest.display.no_data_color, 'fill-opacity': 0 },
     },
     {
       id: 'bands',
       type: 'fill',
       source: 'frame',
       slot,
-      paint: { 'fill-color': bandColors, 'fill-opacity': 1 },
+      paint: { 'fill-color': bandColors, 'fill-opacity': .5 },
     },
     {
       id: 'place-lines',
