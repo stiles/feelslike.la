@@ -42,7 +42,7 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
       <p class="place-name" id="hero-place"></p>
       <p class="hero-hour" id="hero-hour"></p>
       <div class="hero-value">
-        <p class="hero-label">Feels like</p>
+        <p class="hero-label">Feels like forecast</p>
         <p class="hero-number" id="hero-number">—</p>
       </div>
       <p class="hero-secondary" id="hero-secondary"></p>
@@ -111,7 +111,7 @@ export function createHero(root: HTMLElement, bundle: Bundle): HeroView {
         ? 'We have no reading for this hour.'
         : same
           ? 'Same as the air temperature at this hour.'
-          : `Air temperature <strong>${degrees(air)}</strong>`;
+          : `Air temperature: <strong>${degrees(air)}</strong>`;
 
     if (high) {
       peakBlock.hidden = false;

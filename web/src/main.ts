@@ -78,7 +78,7 @@ function run(bundle: Bundle): void {
 
   const picker = createPicker(document.querySelector('#search') as HTMLElement, {
     id: 'place-search',
-    label: "Find a city or neighborhood",
+    label: "Pick a city or LA neighborhood",
     placeholder: 'Santa Monica, Venice...',
     places: bundle.ordered,
     onSelect: selectPlace,
@@ -326,7 +326,7 @@ function writeStatusChip(bundle: Bundle): void {
   if (!chip) return;
   const state = freshness(bundle.manifest);
   const reference = bundle.manifest.forecast_reference_times[0];
-  chip.textContent = state.state === 'current' ? 'NWS forecast' : state.message;
+  chip.textContent = state.state === 'current' ? 'Local forecast' : state.message;
   chip.title = reference
     ? `${state.message} Issued ${exactTimestamp(reference)}.`
     : state.message;
@@ -364,6 +364,7 @@ function writeNotes(bundle: Bundle): void {
         Service</a> National Digital Forecast Database. Place boundaries from
         <a href="https://whatsmyla.com">WhatsMyLA.com</a>. Read <a href="https://github.com/stiles/feelslike.la">more about the data</a>.
       </p>
+      <p class="credit">© <a href="https://mattstiles.me">Matt Stiles</a>, 2026</p>
     </details>
   `;
 }
