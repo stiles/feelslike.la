@@ -8,7 +8,6 @@ import type { Place } from './types';
 
 export interface Picker {
   setValue(label: string): void;
-  focus(): void;
 }
 
 interface Options {
@@ -24,29 +23,32 @@ interface Options {
 export function createPicker(root: HTMLElement, options: Options): Picker {
   const listId = `${options.id}-list`;
   root.innerHTML = `
-    <label class="picker-label" for="${options.id}">${escape(options.label)}</label>
-    <div class="picker-shell">
-      <input
-        type="text"
-        id="${options.id}"
-        class="picker-input"
-        role="combobox"
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false"
-        aria-expanded="false"
-        aria-controls="${listId}"
-        aria-autocomplete="list"
-        placeholder="${escape(options.placeholder)}"
-      />
-      ${
-        options.onClear
-          ? `<button type="button" class="picker-clear" hidden>${escape(options.clearLabel ?? 'Clear')}</button>`
-          : ''
-      }
+    <div class="picker">
+      <label class="picker-label" for="${options.id}">${escape(options.label)}</label>
+      <div class="picker-shell">
+        <input
+          type="text"
+          id="${options.id}"
+          class="picker-input"
+          role="combobox"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          enterkeyhint="search"
+          aria-expanded="false"
+          aria-controls="${listId}"
+          aria-autocomplete="list"
+          placeholder="${escape(options.placeholder)}"
+        />
+        ${
+          options.onClear
+            ? `<button type="button" class="picker-clear" hidden>${escape(options.clearLabel ?? 'Clear')}</button>`
+            : ''
+        }
+      </div>
+      <ul class="picker-list" id="${listId}" role="listbox" hidden></ul>
+      <p class="picker-status visually-hidden" role="status"></p>
     </div>
-    <ul class="picker-list" id="${listId}" role="listbox" hidden></ul>
-    <p class="picker-status visually-hidden" role="status"></p>
   `;
 
   const input = root.querySelector(`#${options.id}`) as HTMLInputElement;
@@ -112,6 +114,10 @@ export function createPicker(root: HTMLElement, options: Options): Picker {
     input.value = place.name;
     close();
     options.onSelect(place.slug);
+    // The reader picked an answer; the virtual keyboard has nothing left to do. Without
+    // this, tapping a suggestion on a phone leaves the keyboard covering the screen
+    // until the reader dismisses it by hand — the one step this whole flow should save.
+    input.blur();
   }
 
   input.addEventListener('input', () => {
@@ -119,6 +125,13 @@ export function createPicker(root: HTMLElement, options: Options): Picker {
     if (query.length < 1) close();
     else open(query);
     if (clear) clear.hidden = !input.value;
+  });
+
+  // Re-tapping a box that already names a place (after a selection, after geolocation)
+  // reopens the list against that value instead of showing nothing until the reader
+  // clears it first — the same "tap it and see options" feel as a native select.
+  input.addEventListener('focus', () => {
+    if (input.value.trim() && list.hidden) open(input.value.trim());
   });
 
   input.addEventListener('keydown', (event) => {
@@ -162,9 +175,6 @@ export function createPicker(root: HTMLElement, options: Options): Picker {
     setValue(label: string) {
       input.value = label;
       if (clear) clear.hidden = !label;
-    },
-    focus() {
-      input.focus();
     },
   };
 }

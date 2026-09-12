@@ -83,9 +83,16 @@ export interface MapView {
     comparison: number;
   };
   bandAt(longitude: number, latitude: number): number | null;
+  /** A coordinate's position in the map container, in pixels — for the smoke harness
+   * to know where to click. */
+  project(longitude: number, latitude: number): { x: number; y: number };
 }
 
-export function createMap(container: HTMLElement, bundle: Bundle): MapView {
+export function createMap(
+  container: HTMLElement,
+  bundle: Bundle,
+  onSelect: (slug: string) => void,
+): MapView {
   const bandColors = paint(bundle);
   const withBasemap = Boolean(TOKEN);
   if (withBasemap) mapboxgl.accessToken = TOKEN;
@@ -134,8 +141,17 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
     county: GeoJSON.FeatureCollection | null;
     selected: string;
     comparison: string;
+    hovered: string;
     label: { name: string; longitude: number; latitude: number } | null;
-  } = { frame: null, outlines: null, county: null, selected: '', comparison: '', label: null };
+  } = {
+    frame: null,
+    outlines: null,
+    county: null,
+    selected: '',
+    comparison: '',
+    hovered: '',
+    label: null,
+  };
 
   const applied: { frame?: unknown; outlines?: unknown; county?: unknown; filters?: string } = {};
   let basemap = withBasemap;
@@ -189,12 +205,13 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
       applied.county = wanted.county;
     }
 
-    const filters = `${wanted.selected}|${wanted.comparison}`;
+    const filters = `${wanted.selected}|${wanted.comparison}|${wanted.hovered}`;
     if (map.getLayer('selected-line') && applied.filters !== filters) {
       for (const layer of ['selected-casing', 'selected-line']) {
         map.setFilter(layer, ['==', ['get', 'slug'], wanted.selected]);
       }
       map.setFilter('comparison-line', ['==', ['get', 'slug'], wanted.comparison]);
+      map.setFilter('hover-line', ['==', ['get', 'slug'], wanted.hovered]);
       applied.filters = filters;
     }
   }
@@ -226,6 +243,45 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
 
   const labels = createLabels(container, map, bundle, () => basemap);
   const reset = createReset(container, map);
+
+  /**
+   * Hover and tap on `outlines-fill`, the invisible layer that makes every neighborhood
+   * clickable at every zoom.
+   *
+   * `mousemove`/`mouseleave` are Mapbox's own layer-scoped delegation: they fire only
+   * for this layer, already hit-tested, so there's no manual `queryRenderedFeatures`
+   * here. A tap on a touch device fires `click` the same way a mouse click does, so
+   * selecting a place off the map costs nothing extra for a phone.
+   */
+  map.on('mousemove', 'outlines-fill', (event) => {
+    const feature = event.features?.[0];
+    const slug = String(feature?.properties?.slug ?? '');
+    if (!slug) return;
+    map.getCanvas().style.cursor = 'pointer';
+    if (wanted.hovered !== slug) {
+      wanted.hovered = slug;
+      flush();
+    }
+    labels.hover({
+      x: event.point.x,
+      y: event.point.y,
+      name: String(feature?.properties?.name ?? ''),
+    });
+  });
+
+  map.on('mouseleave', 'outlines-fill', () => {
+    map.getCanvas().style.cursor = '';
+    if (wanted.hovered !== '') {
+      wanted.hovered = '';
+      flush();
+    }
+    labels.hover(null);
+  });
+
+  map.on('click', 'outlines-fill', (event) => {
+    const slug = event.features?.[0]?.properties?.slug;
+    if (typeof slug === 'string' && slug) onSelect(slug);
+  });
 
   /**
    * Bring a selection into view if the LA frame does not contain it.
@@ -291,6 +347,10 @@ export function createMap(container: HTMLElement, bundle: Bundle): MapView {
       const band = feature?.properties?.band_id;
       return typeof band === 'number' ? band : null;
     },
+    project(longitude, latitude) {
+      const point = map.project([longitude, latitude]);
+      return { x: point.x, y: point.y };
+    },
   };
 }
 
@@ -309,7 +369,10 @@ function paint(bundle: Bundle): DataDrivenPropertyValueSpecification<string> {
 function sources(): Record<string, SourceSpecification> {
   return {
     frame: { type: 'geojson', data: empty() },
-    outlines: { type: 'geojson', data: empty() },
+    // `promoteId` keys feature-state by slug rather than Mapbox's own auto-assigned
+    // numeric id, so the hover filter below can be driven by the same slug every other
+    // layer already filters on.
+    outlines: { type: 'geojson', data: empty(), promoteId: 'slug' },
     county: { type: 'geojson', data: empty() },
   };
 }
@@ -342,6 +405,16 @@ function layers(
       slot,
       paint: { 'fill-color': bandColors, 'fill-opacity': .5 },
     },
+    // Invisible, and the whole point of it: a fill covers every neighborhood at every
+    // zoom, including where `place-lines` below hasn't faded in yet, so hover and click
+    // both work before a reader has zoomed in far enough to see a single boundary.
+    {
+      id: 'outlines-fill',
+      type: 'fill',
+      source: 'outlines',
+      slot,
+      paint: { 'fill-color': '#000000', 'fill-opacity': 0 },
+    },
     {
       id: 'place-lines',
       type: 'line',
@@ -356,6 +429,17 @@ function layers(
         'line-width': 0.3,
         'line-opacity': ['interpolate', ['linear'], ['zoom'], 8.5, 0, 10, 0.16],
       },
+    },
+    // One filter, updated on every hover, the same pattern as selected/comparison below
+    // rather than a separate always-on layer — lighter than either, since this is a
+    // "here's what that is" cue, not a second selection.
+    {
+      id: 'hover-line',
+      type: 'line',
+      source: 'outlines',
+      slot,
+      filter: ['==', ['get', 'slug'], ''],
+      paint: { 'line-color': '#262626', 'line-width': 1.5, 'line-opacity': 0.6 },
     },
     {
       id: 'county-line',
@@ -451,6 +535,14 @@ function createLabels(
   layer.append(chosen);
   let selected: { name: string; longitude: number; latitude: number } | null = null;
 
+  // Follows the pointer directly rather than the feature's own geometry — it only
+  // exists while the mouse is moving, so there is no "next map move" to reposition it
+  // on, unlike `chosen` and `context` above.
+  const hovered = document.createElement('span');
+  hovered.className = 'map-label hover';
+  hovered.hidden = true;
+  layer.append(hovered);
+
   function position(
     node: HTMLElement,
     longitude: number,
@@ -496,6 +588,15 @@ function createLabels(
     select(next: { name: string; longitude: number; latitude: number } | null) {
       selected = next;
       place();
+    },
+    hover(next: { x: number; y: number; name: string } | null) {
+      if (!next) {
+        hovered.hidden = true;
+        return;
+      }
+      hovered.textContent = next.name;
+      hovered.style.transform = `translate(${Math.round(next.x)}px, ${Math.round(next.y)}px)`;
+      hovered.hidden = false;
     },
   };
 }

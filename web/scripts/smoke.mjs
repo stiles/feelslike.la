@@ -84,6 +84,8 @@ async function main() {
     await desktop(browser, origin, wantShots);
     await directLink(browser, origin);
     await keyboard(browser, origin);
+    await mapClickSelect(browser, origin);
+    await wordmarkLabel(browser, origin);
     await withoutTheBasemap(browser, origin, wantShots);
   } finally {
     await browser.close();
@@ -468,6 +470,93 @@ async function keyboard(browser, origin) {
   notes.push(`slider announces "${described}"`);
 
   check(errors.length === 0, `console errors during keyboard use: ${errors.slice(0, 3).join(' | ')}`);
+  await page.close();
+}
+
+/**
+ * Hovering and clicking a neighborhood directly on the map, with no search box
+ * involved. Santa Monica sits well inside the opening LA frame and is never the
+ * default selection, so both the hover label and the click are real signal rather
+ * than a no-op against whatever was already selected.
+ */
+async function mapClickSelect(browser, origin) {
+  // An explicit path, not '/' — the keyboard check above leaves Lancaster remembered
+  // in this same browser's localStorage, and Lancaster sits outside the opening frame,
+  // which would pan the map before this test ever gets to click on it. Downtown is
+  // inside the frame regardless of what an earlier check remembered.
+  const { page, errors } = await open(browser, origin, '/downtown', { width: 1024, height: 900 });
+
+  // Outlines are the last asset to load, and there is nothing to click before they do.
+  await page.waitForFunction(() => (window.feelslike?.map?.drawn().outlines ?? 0) > 0, {
+    timeout: 15000,
+  });
+
+  const before = await page.evaluate(() => window.feelslike.store.current.selection?.slug);
+
+  // The map sits well below the fold on a fresh load — Puppeteer's synthetic mouse
+  // events are viewport coordinates, so a click computed against an off-screen
+  // element's rect lands nowhere. Scroll it into view first, then measure.
+  await page.evaluate(() => document.querySelector('#map')?.scrollIntoView({ block: 'center' }));
+
+  const target = await page.evaluate(() => {
+    const { bundle, map } = window.feelslike;
+    const [longitude, latitude] = bundle.placeCells.places['santa-monica'].reference_point;
+    return map.project(longitude, latitude);
+  });
+  const box = await page.$eval('#map', (node) => {
+    const rect = node.getBoundingClientRect();
+    return { left: rect.left, top: rect.top };
+  });
+  const point = { x: box.left + target.x, y: box.top + target.y };
+
+  await page.mouse.move(point.x, point.y);
+  await page
+    .waitForSelector('.map-label.hover:not([hidden])', { timeout: 5000 })
+    .catch(() => undefined);
+  const hovered = await page.$eval('.map-label.hover', (node) =>
+    node.hidden ? '' : node.textContent.trim(),
+  );
+  check(hovered.length > 0, 'hovering a neighborhood on the map showed no name');
+
+  await page.mouse.click(point.x, point.y);
+  await page
+    .waitForFunction(
+      () => window.feelslike.store.current.selection?.slug === 'santa-monica',
+      { timeout: 5000 },
+    )
+    .catch(() => undefined);
+  const after = await page.evaluate(() => window.feelslike.store.current.selection?.slug);
+  check(
+    after === 'santa-monica' && after !== before,
+    `clicking Santa Monica on the map selected "${after}", not santa-monica`,
+  );
+  const searchValue = await page.$eval('#place-search', (input) => input.value);
+  check(
+    searchValue === 'Santa Monica',
+    `search box did not follow a map selection: "${searchValue}"`,
+  );
+  notes.push(`map hover showed "${hovered}", click selected ${after}`);
+
+  check(errors.length === 0, `console errors selecting from the map: ${errors.slice(0, 3).join(' | ')}`);
+  await page.close();
+}
+
+/**
+ * The masthead names the place and nothing more. A direct link has to reach the wordmark
+ * as plain text, with no control in it that duplicates the summary panel's picker.
+ */
+async function wordmarkLabel(browser, origin) {
+  const { page, errors } = await open(browser, origin, '/downtown', { width: 1024, height: 900 });
+
+  const text = await page.$eval('#wordmark', (node) => node.textContent.trim());
+  check(text === 'Downtown LA Feels Like', `wordmark read "${text}"`);
+  const controls = await page.$$eval('#wordmark', (nodes) =>
+    nodes.flatMap((node) => [...node.querySelectorAll('button, a, select, input')].length),
+  );
+  check(controls[0] === 0, `wordmark still holds ${controls[0]} control(s)`);
+  notes.push(`wordmark is plain text: "${text}"`);
+
+  check(errors.length === 0, `console errors on the masthead: ${errors.slice(0, 3).join(' | ')}`);
   await page.close();
 }
 

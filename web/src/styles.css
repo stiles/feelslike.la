@@ -116,16 +116,14 @@ a {
   font-weight: 700;
 }
 
-/* The place, not "Feels Like," is the part that changes with every search — underline
-   it so the one variable word in a fixed phrase reads as the answer to "where," not as
-   equal-weight boilerplate. */
+/* The place, not "Feels Like," is the part that changes with every search — it carries
+   the same weight as the fixed half of the phrase so the line reads as one title rather
+   than a caption with a variable slot. Nothing here is clickable: the place picker lives
+   in the summary panel just below, and see writeWordmark() in main.ts for why a second
+   one up here did more harm than good. */
 .wordmark-place {
   color: var(--ink);
   font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: var(--focus);
-  text-decoration-thickness: 3px;
-  text-underline-offset: 3px;
 }
 
 .status-chip {
@@ -211,6 +209,17 @@ a {
   min-height: 1.1em;
   font-size: 12px;
   color: rgb(255 255 255 / 62%);
+}
+
+/* The positioned ancestor `.picker-list` actually needs. `.picker-shell` below is also
+   `position: relative`, but the list is its sibling, not its descendant — positioning
+   only inherits down the DOM, not sideways — so without this wrapper the list's
+   `top: 100%` had nothing but the initial containing block to measure against, one
+   full viewport height down from the top of the page. That's a coincidence of layout,
+   not a broken component: the list was always there, just rendered off in the chart or
+   map section instead of under the box a reader had just typed into. */
+.picker {
+  position: relative;
 }
 
 .picker-shell {
@@ -351,10 +360,9 @@ a {
 
 .picker-option {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 10px 12px;
+  flex-direction: column;
+  gap: 1px;
+  padding: 9px 12px;
   cursor: pointer;
 }
 
@@ -366,16 +374,24 @@ a {
   font-weight: 500;
 }
 
-.picker-meta,
-.picker-empty {
-  font-size: 12px;
+/* A caption under the name, not a second column beside it — city/region is context for
+   telling apart two similarly-named places, not something to read with equal weight
+   every time. Single line and truncated rather than wrapping to match the name's own
+   height, which is what made it read as a second row of content instead of a footnote. */
+.picker-meta {
+  font-size: 11px;
   color: var(--quiet);
+  opacity: 0.8;
   text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .picker-empty {
   padding: 10px 12px;
-  text-transform: none;
+  font-size: 12px;
+  color: var(--quiet);
 }
 
 /* The reading itself. */
@@ -821,6 +837,23 @@ a {
   margin: 0 5px 1px 0;
   border-radius: 50%;
   background: #1a1a1a;
+}
+
+/* Follows the pointer rather than a place's own reference point (see hover() in
+   createLabels()), which is what reveals a neighborhood boundary the reader can't yet
+   see at this zoom — the whole reason `outlines-fill` exists as a hit-test layer below
+   any visible line. Dark, not white like .selected, so hovering never gets mistaken for
+   the one place actually chosen. */
+.map-label.hover {
+  z-index: 3;
+  margin: -30px 0 0 10px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: #262626;
+  color: #fff;
+  font-weight: 500;
+  text-shadow: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
 }
 
 .map-reset {

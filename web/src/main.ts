@@ -155,7 +155,14 @@ function run(bundle: Bundle): void {
 
   // Everything above is on screen by now. The map, its library and the place outlines
   // load after it, and any failure here leaves the forecast intact.
-  void attachMap(bundle).then((view) => {
+  void attachMap(bundle, (slug) => {
+    selectPlace(slug);
+    // Same reasoning as the geolocation flow above: the map just changed the
+    // selection, and the search box is the one view that doesn't redraw from store
+    // state, so it has to be told directly or it goes on showing the old place.
+    const name = bundle.places.get(slug)?.name;
+    if (name) picker.setValue(name);
+  }).then((view) => {
     mapView = view;
     // A handle for the console and the smoke harness. Read-only in practice, and the
     // only way to ask the map what it drew rather than trusting that it did.
@@ -178,13 +185,16 @@ function run(bundle: Bundle): void {
  * Returns null when the library cannot load or the browser cannot draw it. The caller
  * treats that as normal, because the card and chart never depended on it.
  */
-async function attachMap(bundle: Bundle): Promise<MapView | null> {
+async function attachMap(
+  bundle: Bundle,
+  onSelect: (slug: string) => void,
+): Promise<MapView | null> {
   const container = document.querySelector('#map') as HTMLElement | null;
   if (!container) return null;
   try {
     if (!webglAvailable()) throw new Error('this browser cannot draw the map');
     const { createLegend, createMap } = await import('./map');
-    const view = createMap(container, bundle);
+    const view = createMap(container, bundle, onSelect);
     createLegend(document.querySelector('#legend') as HTMLElement, bundle);
     container.setAttribute(
       'aria-label',
@@ -276,6 +286,11 @@ function announce(message: string): void {
  * The masthead names the place on screen — "Downtown LA Feels Like" — rather than
  * carrying a fixed brand name above a page that is about to say the same thing again in
  * the summary panel below it.
+ *
+ * A label, not a control. An earlier version made the place name a dropdown trigger,
+ * which put a second place picker roughly 60 pixels above the one in the summary panel —
+ * and, because the masthead does not stick, opening it covered the very box it
+ * duplicated. Changing place happens in one place on this page.
  *
  * A standalone city drops the redundant "LA": Culver City and Beverly Hills are not Los
  * Angeles, so "Culver City LA Feels Like" would misname them. Neighborhoods and
