@@ -78,14 +78,24 @@
   <body>
     <a class="skip-link" href="#hero">Skip to the forecast</a>
 
+    <!-- Sticky, so the place name and the way to change it stay reachable from the
+         chart and the map. The <header> is full-bleed for its background and rule;
+         .masthead-inner carries the same 1280px measure as <main>. -->
     <header class="masthead">
-      <!-- Names the place on screen, not just the brand — see writeWordmark() in
-           main.ts. "LA Feels Like" until a place resolves, then "Downtown LA Feels
-           Like" or, for a standalone city like Culver City, "Culver City Feels Like"
-           with no redundant "LA." A label only; place is changed in the summary
-           panel's search box below. -->
-      <p class="wordmark" id="wordmark">LA <strong>Feels Like</strong></p>
-      <p class="status-chip" id="status-chip" role="status"></p>
+      <div class="masthead-inner">
+        <!-- Names the place on screen, not just the brand — see writeWordmark() in
+             main.ts. "LA Feels Like" until a place resolves, then "Downtown LA Feels
+             Like" or, for a standalone city like Culver City, "Culver City Feels Like"
+             with no redundant "LA." A label, never a control. -->
+        <p class="wordmark" id="wordmark">LA <strong>Feels Like</strong></p>
+        <!-- Hidden until the summary panel's search box scrolls out of view, and it
+             takes the status chip's place rather than crowding in beside it — see
+             wireNavPlace() in main.ts. -->
+        <button class="nav-place" id="nav-place" type="button" hidden aria-expanded="false">
+          Change place
+        </button>
+        <p class="status-chip" id="status-chip" role="status"></p>
+      </div>
     </header>
 
     <main>

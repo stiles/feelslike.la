@@ -76,9 +76,11 @@ function run(bundle: Bundle): void {
     (comparison) => store.update({ comparison }),
   );
 
+  // "Pick a city or LA neighborhood" spelled out what the placeholder already shows by
+  // example — one city, one neighborhood — in a caption meant to be read at a glance.
   const picker = createPicker(document.querySelector('#search') as HTMLElement, {
     id: 'place-search',
-    label: "Pick a city or LA neighborhood",
+    label: 'Find a place',
     placeholder: 'Santa Monica, Venice...',
     places: bundle.ordered,
     onSelect: selectPlace,
@@ -98,11 +100,26 @@ function run(bundle: Bundle): void {
     });
   }
 
+  /**
+   * Changing place from anywhere but the search box itself — the map, the masthead.
+   *
+   * The search box is the one view the store does not drive: everything else (hero, map,
+   * chart, slider readout) redraws from state, but the box only changes when someone
+   * types in it or commits an option. Without this it goes on naming the place the
+   * reader just moved away from.
+   */
+  function selectFromElsewhere(slug: string): void {
+    selectPlace(slug);
+    const name = bundle.places.get(slug)?.name;
+    if (name) picker.setValue(name);
+  }
+
   let mapView: MapView | null = null;
   let drawnFrame: GeoJSON.FeatureCollection | null = null;
   let frameToken = 0;
 
   wireGeolocation(bundle, lookup, store, picker);
+  wireNavPlace(bundle, store, selectFromElsewhere);
   writeNotes(bundle);
   writeStatusChip(bundle);
 
@@ -155,14 +172,7 @@ function run(bundle: Bundle): void {
 
   // Everything above is on screen by now. The map, its library and the place outlines
   // load after it, and any failure here leaves the forecast intact.
-  void attachMap(bundle, (slug) => {
-    selectPlace(slug);
-    // Same reasoning as the geolocation flow above: the map just changed the
-    // selection, and the search box is the one view that doesn't redraw from store
-    // state, so it has to be told directly or it goes on showing the old place.
-    const name = bundle.places.get(slug)?.name;
-    if (name) picker.setValue(name);
-  }).then((view) => {
+  void attachMap(bundle, selectFromElsewhere).then((view) => {
     mapView = view;
     // A handle for the console and the smoke harness. Read-only in practice, and the
     // only way to ask the map what it drew rather than trusting that it did.
@@ -280,6 +290,102 @@ function wireGeolocation(bundle: Bundle, lookup: CellLookup, store: Store, picke
 function announce(message: string): void {
   const status = document.querySelector('#locate-status');
   if (status) status.textContent = message;
+}
+
+/**
+ * The masthead's place control, which exists only while the summary panel's search box
+ * is off screen.
+ *
+ * An earlier version of this lived here unconditionally and was a plain duplicate: the
+ * masthead did not stick, so the real search box was always within a screen of it, and
+ * opening the masthead's copy covered the box it was copying. What changed is that the
+ * masthead sticks now, so there is a long stretch of page — the chart, the map, the
+ * comparison table — where the search box is genuinely gone and the only way to change
+ * place is to scroll back up and lose your spot. An IntersectionObserver watches the
+ * search row and reveals the button exactly for that stretch. Two pickers are never
+ * reachable at once.
+ */
+function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => void): void {
+  const masthead = document.querySelector('.masthead') as HTMLElement;
+  const button = document.querySelector('#nav-place') as HTMLButtonElement;
+  const chip = document.querySelector('#status-chip') as HTMLElement;
+  // Built by createHero(), which has already run by the time this is wired.
+  const finder = document.querySelector('.finder') as HTMLElement;
+
+  const popover = document.createElement('div');
+  popover.className = 'nav-popover';
+  popover.hidden = true;
+  document.body.append(popover);
+
+  function close(options?: { restoreFocus?: boolean }): void {
+    if (popover.hidden) return;
+    popover.hidden = true;
+    popover.replaceChildren();
+    button.setAttribute('aria-expanded', 'false');
+    if (options?.restoreFocus) button.focus();
+  }
+
+  function open(): void {
+    const rect = button.getBoundingClientRect();
+    // Right-aligned to the button and then pulled back inside the viewport. The button
+    // sits at the right edge of the strip, so a panel hung from its left corner would
+    // run off the screen on a phone.
+    const width = Math.min(300, window.innerWidth - 16);
+    popover.style.top = `${rect.bottom + 8}px`;
+    popover.style.left = `${Math.max(8, rect.right - width)}px`;
+    // Rebuilt on every open rather than kept between them. Its one job is "here's the
+    // place you're looking at, type to replace it," and a list left over from the last
+    // open would say otherwise.
+    const picker = createPicker(popover, {
+      id: 'nav-search',
+      label: 'Find a place',
+      placeholder: 'Santa Monica, Venice...',
+      places: bundle.ordered,
+      onSelect: (slug) => {
+        onSelect(slug);
+        close({ restoreFocus: true });
+      },
+    });
+    popover.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    const current = store.current.selection?.label;
+    if (current) picker.setValue(current);
+    picker.focus();
+  }
+
+  // The masthead covers the top of the viewport, so an element scrolled underneath it
+  // still counts as intersecting. Shrinking the observer's root by the strip's own
+  // height is what makes "hidden behind the masthead" mean gone. Measured once: the
+  // strip grows by a line for the three longest place names, which moves the reveal
+  // point by about 20px on a page thousands of pixels tall.
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+      const gone = entry ? !entry.isIntersecting : false;
+      button.hidden = !gone;
+      chip.hidden = gone;
+      // Scrolling the real search box back into view retires this one mid-use rather
+      // than leaving a panel hanging over a control that can now do the same job.
+      if (!gone) close();
+    },
+    { rootMargin: `-${masthead.offsetHeight}px 0px 0px 0px` },
+  );
+  observer.observe(finder);
+
+  button.addEventListener('click', () => {
+    if (popover.hidden) open();
+    else close({ restoreFocus: true });
+  });
+
+  document.addEventListener('click', (event) => {
+    if (popover.hidden) return;
+    const target = event.target as Node;
+    if (popover.contains(target) || button.contains(target)) return;
+    close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close({ restoreFocus: true });
+  });
 }
 
 /**

@@ -86,6 +86,13 @@ async function main() {
     await keyboard(browser, origin);
     await mapClickSelect(browser, origin);
     await wordmarkLabel(browser, origin);
+    await stickyNavPlace(browser, origin, { width: 1024, height: 900 }, 'desktop');
+    await stickyNavPlace(
+      browser,
+      origin,
+      { width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+      'mobile',
+    );
     await withoutTheBasemap(browser, origin, wantShots);
   } finally {
     await browser.close();
@@ -557,6 +564,80 @@ async function wordmarkLabel(browser, origin) {
   notes.push(`wordmark is plain text: "${text}"`);
 
   check(errors.length === 0, `console errors on the masthead: ${errors.slice(0, 3).join(' | ')}`);
+  await page.close();
+}
+
+/**
+ * The masthead sticks, and its place control appears only for the stretch of page where
+ * the summary panel's own search box is gone. The two must never be reachable at once —
+ * that duplication is exactly what this replaced.
+ */
+async function stickyNavPlace(browser, origin, viewport, when) {
+  const { page, errors } = await open(browser, origin, '/downtown', viewport);
+
+  // Rendered boxes, not the `hidden` property: a class that sets `display` outranks the
+  // UA stylesheet's `[hidden] { display: none }`, so the attribute can be set on an
+  // element the reader still sees. Asking whether it has a box is the only honest test.
+  const shown = (selector) => page.$eval(selector, (node) => node.getClientRects().length > 0);
+
+  check(!(await shown('#nav-place')), `${when}: nav control visible at the top of the page`);
+
+  // Far enough to clear the summary panel at either width.
+  await page.evaluate(() => window.scrollBy(0, 900));
+  await page.waitForFunction(
+    () => document.querySelector('#nav-place')?.getClientRects().length > 0,
+    { timeout: 5000 },
+  );
+
+  const strip = await page.$eval('.masthead', (node) => Math.round(node.getBoundingClientRect().top));
+  check(strip === 0, `${when}: masthead did not stick — its top is at ${strip}px`);
+  check(!(await shown('#status-chip')), `${when}: status chip and nav control are both in the masthead`);
+  check(
+    await page.$eval('.finder', (node) => node.getBoundingClientRect().bottom <= 0),
+    `${when}: nav control appeared while the summary panel's search box was still on screen`,
+  );
+
+  await page.click('#nav-place');
+  await page.waitForSelector('.nav-popover:not([hidden]) .picker-option', { timeout: 5000 });
+  // The panel hangs off the right edge of a narrow viewport unless it is pulled back in.
+  const panel = await page.$eval('.nav-popover', (node) => {
+    const rect = node.getBoundingClientRect();
+    return { left: Math.round(rect.left), right: Math.round(rect.right), width: window.innerWidth };
+  });
+  check(
+    panel.left >= 0 && panel.right <= panel.width,
+    `${when}: popover runs outside the viewport (${panel.left}–${panel.right} of ${panel.width})`,
+  );
+
+  const before = await page.evaluate(() => window.feelslike.store.current.selection?.slug);
+  // Prefilled with the current place, whose own top match is Downtown itself — clear it
+  // so this is a real change rather than a same-place no-op.
+  await page.$eval('.nav-popover input', (input) => {
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.type('.nav-popover input', 'Lancaster', { delay: 20 });
+  await page.waitForSelector('.nav-popover .picker-option');
+  await page.click('.nav-popover .picker-option');
+  await page.waitForFunction(() => document.querySelector('.nav-popover')?.hidden !== false, {
+    timeout: 5000,
+  });
+  const after = await page.evaluate(() => window.feelslike.store.current.selection?.slug);
+  check(after === 'lancaster' && after !== before, `${when}: nav popover selected "${after}", not lancaster`);
+  // Same as a map click: the search box is the one view the store does not drive.
+  const synced = await page.$eval('#place-search', (input) => input.value);
+  check(synced === 'Lancaster', `${when}: summary search box did not follow the nav popover: "${synced}"`);
+
+  // Back at the top, the control retires rather than sitting beside the real one.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForFunction(
+    () => document.querySelector('#nav-place')?.getClientRects().length === 0,
+    { timeout: 5000 },
+  );
+  check(await shown('#status-chip'), `${when}: status chip never came back at the top of the page`);
+  notes.push(`${when}: nav control revealed on scroll, selected ${after}, hidden again at the top`);
+
+  check(errors.length === 0, `${when}: console errors from the nav control: ${errors.slice(0, 3).join(' | ')}`);
   await page.close();
 }
 

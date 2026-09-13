@@ -26,6 +26,12 @@
   box-sizing: border-box;
 }
 
+/* Keeps the skip link (and any other in-page jump) from landing underneath the sticky
+   masthead, which would scroll the target to a spot the reader cannot see. */
+html {
+  scroll-padding-top: 64px;
+}
+
 body {
   margin: 0;
   background: var(--page);
@@ -67,10 +73,12 @@ a {
   left: -9999px;
 }
 
+/* Above .masthead and .nav-popover both: it appears at the top-left corner, which is
+   exactly where the sticky strip now sits. */
 .skip-link:focus {
   left: 8px;
   top: 8px;
-  z-index: 20;
+  z-index: 50;
   padding: 8px 12px;
   background: #fff;
   border: 2px solid var(--focus);
@@ -82,14 +90,29 @@ a {
 }
 
 /* Masthead. A quiet strip, not a hero of its own — the summary panel below carries the
-   page's one moment of contrast. */
+   page's one moment of contrast.
 
-/* Both children are now variable-length sentences — the wordmark names the place on
-   screen (see writeWordmark() in main.ts), and the status chip's stale/aging states are
-   full sentences rather than "NWS forecast." flex-wrap lets either one drop to its own
-   line instead of forcing the other to squeeze; the rare "Unincorporated Santa Monica
-   Mountains LA Feels Like" is what this is for. */
+   Sticky because the place name and the control beside it are the two things worth
+   having at hand from anywhere on the page. The background and the hairline rule are on
+   the full-bleed <header> rather than the measured strip inside it, so the line spans
+   the viewport instead of stopping at the content edge on a wide monitor. The rule is
+   permanent, not applied on a scroll listener: cards sliding under an unmarked strip is
+   the one thing that makes a sticky header look like a rendering bug. */
 .masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--page);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Children are variable-length — the wordmark names the place on screen (see
+   writeWordmark() in main.ts), and the status chip's stale/aging states are full
+   sentences rather than "NWS forecast." flex-wrap lets either one drop to its own line
+   instead of forcing the other to squeeze; the rare "Unincorporated Santa Monica
+   Mountains LA Feels Like" is what this is for, and it costs a second line of sticky
+   height on a phone for three of 270 places. */
+.masthead-inner {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -97,7 +120,7 @@ a {
   gap: 4px 12px;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 16px 16px 8px;
+  padding: 12px 16px;
 }
 
 .wordmark {
@@ -134,6 +157,70 @@ a {
   color: var(--quiet);
   text-align: right;
   cursor: default;
+}
+
+/* Quiet: a way back to a control, not a call to action. Held to the same 12px scale as
+   the status chip it stands in for, so the strip's height doesn't shift when one
+   replaces the other. The caret says "this opens something" without the box and border
+   of a form field bolted into the masthead. */
+.nav-place {
+  appearance: none;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* `display` on a class beats the UA stylesheet's `[hidden] { display: none }`, so
+   without this the button ignores the attribute and sits in the masthead from the
+   first paint — beside the very search box it stands in for. */
+.nav-place[hidden] {
+  display: none;
+}
+
+.nav-place::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  margin-bottom: 2px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.5;
+  transform: rotate(45deg);
+}
+
+.nav-place:hover {
+  border-color: var(--axis);
+}
+
+.nav-place[aria-expanded='true'] {
+  border-color: var(--focus);
+}
+
+/* `position: fixed` and appended straight to <body>, placed from the button's own
+   `getBoundingClientRect()` in wireNavPlace() — the same problem .picker solves with a
+   positioned ancestor, minus the ancestor. Above .masthead's z-index so the panel isn't
+   clipped by the strip it hangs from. */
+.nav-popover {
+  position: fixed;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  border: 1px solid rgb(38 38 38 / 10%);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 24%);
 }
 
 /* Layout. One column on mobile, in DOM order; two above the desktop breakpoint, by
@@ -1132,7 +1219,7 @@ a {
     padding-inline: 32px;
   }
 
-  .masthead {
+  .masthead-inner {
     padding-inline: 32px;
   }
 
@@ -1188,7 +1275,7 @@ a {
     padding-inline: 8px;
   }
 
-  .masthead {
+  .masthead-inner {
     padding-inline: 12px;
   }
 

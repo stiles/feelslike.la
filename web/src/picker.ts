@@ -8,6 +8,10 @@ import type { Place } from './types';
 
 export interface Picker {
   setValue(label: string): void;
+  /** Hands the reader straight into the box, with any prefilled value selected so the
+   *  first keystroke replaces it. For a picker built inside a popover, which is useless
+   *  until it has focus. */
+  focus(): void;
 }
 
 interface Options {
@@ -175,6 +179,10 @@ export function createPicker(root: HTMLElement, options: Options): Picker {
     setValue(label: string) {
       input.value = label;
       if (clear) clear.hidden = !label;
+    },
+    focus() {
+      input.focus();
+      input.select();
     },
   };
 }
