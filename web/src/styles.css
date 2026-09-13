@@ -899,13 +899,15 @@ a {
 
 /* The selected place, the one name the reader is looking for. A filled pill rather than
    just a text-shadow halo, so it wins a collision with the basemap's own city label
-   instead of blending into it — see Priority 4, "resolve the label collision." A wider
-   offset than the base .map-label's, on top of that: the basemap's city labels (e.g.
+   instead of blending into it — see Priority 4, "resolve the label collision." A small
+   offset from the base .map-label's, on top of that: the basemap's city labels (e.g.
    "Los Angeles") tend to sit right above a downtown-ish reference point, and we have no
-   way to ask Mapbox where its own label landed, so the safest fix is distance. */
+   way to ask Mapbox where its own label landed, so a short offset buys some clearance —
+   but only just enough to clear the dot itself; anything more and the pill visibly
+   drifts off the neighborhood it's naming. */
 .map-label.selected {
   z-index: 2;
-  margin: 10px 0 0 12px;
+  margin: 4px 0 0 8px;
   padding: 3px 8px 3px 6px;
   border-radius: var(--radius-pill);
   background: #fff;

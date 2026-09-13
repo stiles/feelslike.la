@@ -252,8 +252,19 @@ export function createMap(
    * for this layer, already hit-tested, so there's no manual `queryRenderedFeatures`
    * here. A tap on a touch device fires `click` the same way a mouse click does, so
    * selecting a place off the map costs nothing extra for a phone.
+   *
+   * Both handlers are skipped when the primary pointer is coarse (a touchscreen).
+   * A tap there fires a synthetic `mousemove` at the tap point with no `mouseleave`
+   * to follow it — nothing tells this hover pill to move or disappear afterward, so
+   * it would be left floating at whatever screen pixel was tapped, disconnected from
+   * both the place and the map underneath it. Touch has no hover to show anyway; the
+   * tap goes straight to selecting, which has its own label anchored to the place.
    */
+  const coarsePointer =
+    typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+
   map.on('mousemove', 'outlines-fill', (event) => {
+    if (coarsePointer) return;
     const feature = event.features?.[0];
     const slug = String(feature?.properties?.slug ?? '');
     if (!slug) return;
@@ -270,6 +281,7 @@ export function createMap(
   });
 
   map.on('mouseleave', 'outlines-fill', () => {
+    if (coarsePointer) return;
     map.getCanvas().style.cursor = '';
     if (wanted.hovered !== '') {
       wanted.hovered = '';
