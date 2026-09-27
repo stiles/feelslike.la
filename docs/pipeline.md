@@ -83,6 +83,11 @@ threshold was calibrated against a real mistake in this repo, an `#e5e5e4` gray 
 `#dfe9e4` mild band, 4.2 apart and indistinguishable on a phone.
 
 The palette is ColorBrewer Spectral reversed, resampled from its 11 stops to 14 classes.
+Thresholds run from 45°F to 105°F in 5°F steps, with open-ended classes below 45°F
+and at 105°F and above. The scale is shifted 5°F cooler than the original to bring warm
+colors into typical Los Angeles afternoons: gold at 80–85°F, orange at 85–90°F.
+Changing these thresholds requires regenerating and publishing forecast frames along
+with their manifest; existing published builds retain their original scale.
 The adjacency check earned its keep here: sampling Spectral at evenly spaced indexes put
 two classes 7.3 apart, because the curve barely moves through its pale middle. Resampling
 by distance along the curve instead lifts the closest pair to 16.4 and still lands on

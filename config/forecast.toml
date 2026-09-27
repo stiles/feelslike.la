@@ -26,8 +26,9 @@ timezone = "America/Los_Angeles"
 temperature_unit = "degF"
 horizon_hours = 24
 # Fixed, ascending display breaks in Fahrenheit. Interior thresholds only:
-# isobands closes the outer bands at the field extrema.
-band_breaks_f = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110]
+# isobands closes the outer bands at the field extrema. Shifted 5°F cooler so
+# warmer colors arrive sooner in typical Los Angeles conditions.
+band_breaks_f = [45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105]
 
 [display]
 # Simplification tolerance in degrees for the clip mask, roughly 55 m at this latitude.
@@ -57,25 +58,25 @@ outline_simplify_degrees = 0.0005
 # is carrying the scale. And it is anchored at both ends, so adding a hotter class means
 # recoloring rather than appending, unlike an open-ended sequential ramp.
 band_colors = [
-  "#5e4fa2",  # below 50
-  "#4b73b3",  # 50 to 55
-  "#4192b9",  # 55 to 60
-  "#5aaeae",  # 60 to 65
-  "#7dcaa5",  # 65 to 70
-  "#b7e2a2",  # 70 to 75
-  "#e5f598",  # 75 to 80
-  "#ffffbf",  # 80 to 85
-  "#fee18d",  # 85 to 90
-  "#feb869",  # 90 to 95
-  "#f98d51",  # 95 to 100
-  "#eb6047",  # 100 to 105
-  "#ce394e",  # 105 to 110
-  "#9e0142",  # 110 and above
+  "#5e4fa2",  # below 45
+  "#4b73b3",  # 45 to 50
+  "#4192b9",  # 50 to 55
+  "#5aaeae",  # 55 to 60
+  "#7dcaa5",  # 60 to 65
+  "#b7e2a2",  # 65 to 70
+  "#e5f598",  # 70 to 75
+  "#ffffbf",  # 75 to 80
+  "#fee18d",  # 80 to 85
+  "#feb869",  # 85 to 90
+  "#f98d51",  # 90 to 95
+  "#eb6047",  # 95 to 100
+  "#ce394e",  # 100 to 105
+  "#9e0142",  # 105 and above
 ]
 # Cells with no forecast take this gray and never a band color.
 #
 # A mid gray rather than a light one, deliberately, and it matters more against Spectral
-# than it did against a cool-to-warm ramp: the 80-to-85 class is #ffffbf, so a pale gray
+# than it did against a cool-to-warm ramp: the 75-to-80 class is #ffffbf, so a pale gray
 # would put missing data a few points of Lab from the most common LA afternoon. This one
 # is 28 from the nearest band. An earlier #e5e5e4 measured 4.2 from a mild band, which is
 # indistinguishable on a phone in daylight, and validation now refuses anything under 8.
