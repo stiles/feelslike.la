@@ -8,7 +8,14 @@ import { degrees, difference, endSentence, escape, weekdayHour } from './format'
 import { createPicker } from './picker';
 import type { Bundle, Selection } from './types';
 
-const SUGGESTIONS = ['santa-monica', 'downtown', 'woodland-hills', 'lancaster'];
+const SUGGESTIONS = [
+  'koreatown',
+  'el-segundo',
+  'elysian-park',
+  'santa-monica',
+  'studio-city',
+  'north-hollywood',
+];
 
 export interface CompareView {
   render(selection: Selection | null, hour: number, comparison: string | null): void;
@@ -54,7 +61,7 @@ export function createCompare(
       // itself has nothing to say, so it is left off rather than shown disabled.
       const options = SUGGESTIONS.filter(
         (slug) => bundle.places.has(slug) && slug !== selection?.slug,
-      ).slice(0, 3);
+      );
       suggestionRoot.hidden = options.length === 0;
       suggestionRoot.innerHTML = options
         .map(
@@ -108,7 +115,8 @@ export function createCompare(
       return;
     }
 
-    const gap = difference(mine, theirs);
+    // This card describes the comparison place relative to the main selection.
+    const gap = difference(theirs, mine);
     if (!gap) {
       resultRoot.hidden = true;
       return;

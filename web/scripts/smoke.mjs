@@ -80,6 +80,13 @@ async function main() {
   });
 
   try {
+    await comparisonDirection(browser, origin);
+    if (process.argv.includes('--comparison-only')) {
+      for (const note of notes) console.log(`  ${note}`);
+      if (problems.length) throw new Error(problems.join('\n'));
+      server.close();
+      return;
+    }
     await mobile(browser, origin, wantShots);
     await desktop(browser, origin, wantShots);
     await directLink(browser, origin);
@@ -549,8 +556,7 @@ async function mapClickSelect(browser, origin) {
 }
 
 /**
- * The masthead names the place and nothing more. A direct link has to reach the wordmark
- * as plain text, with no control in it that duplicates the summary panel's picker.
+ * The masthead names the place and exposes it as the location picker trigger.
  */
 async function wordmarkLabel(browser, origin) {
   const { page, errors } = await open(browser, origin, '/downtown', { width: 1024, height: 900 });
@@ -560,17 +566,15 @@ async function wordmarkLabel(browser, origin) {
   const controls = await page.$$eval('#wordmark', (nodes) =>
     nodes.flatMap((node) => [...node.querySelectorAll('button, a, select, input')].length),
   );
-  check(controls[0] === 0, `wordmark still holds ${controls[0]} control(s)`);
-  notes.push(`wordmark is plain text: "${text}"`);
+  check(controls[0] === 1, `wordmark holds ${controls[0]} controls instead of one location trigger`);
+  notes.push(`wordmark includes the location trigger: "${text}"`);
 
   check(errors.length === 0, `console errors on the masthead: ${errors.slice(0, 3).join(' | ')}`);
   await page.close();
 }
 
 /**
- * The masthead sticks, and its place control appears only for the stretch of page where
- * the summary panel's own search box is gone. The two must never be reachable at once —
- * that duplication is exactly what this replaced.
+ * The location name opens the picker both at the top and after scrolling.
  */
 async function stickyNavPlace(browser, origin, viewport, when) {
   const { page, errors } = await open(browser, origin, '/downtown', viewport);
@@ -580,7 +584,11 @@ async function stickyNavPlace(browser, origin, viewport, when) {
   // element the reader still sees. Asking whether it has a box is the only honest test.
   const shown = (selector) => page.$eval(selector, (node) => node.getClientRects().length > 0);
 
-  check(!(await shown('#nav-place')), `${when}: nav control visible at the top of the page`);
+  check(await shown('#nav-place'), `${when}: location trigger missing at the top`);
+  await page.click('#nav-place');
+  await page.waitForSelector('#nav-search');
+  await page.keyboard.press('Escape');
+  check(await page.$eval('#nav-place', (node) => document.activeElement === node), `${when}: Escape did not restore focus`);
 
   // Far enough to clear the summary panel at either width.
   await page.evaluate(() => window.scrollBy(0, 900));
@@ -591,7 +599,7 @@ async function stickyNavPlace(browser, origin, viewport, when) {
 
   const strip = await page.$eval('.masthead', (node) => Math.round(node.getBoundingClientRect().top));
   check(strip === 0, `${when}: masthead did not stick — its top is at ${strip}px`);
-  check(!(await shown('#status-chip')), `${when}: status chip and nav control are both in the masthead`);
+  check(await shown('#status-chip'), `${when}: forecast status disappeared on scroll`);
   check(
     await page.$eval('.finder', (node) => node.getBoundingClientRect().bottom <= 0),
     `${when}: nav control appeared while the summary panel's search box was still on screen`,
@@ -628,16 +636,45 @@ async function stickyNavPlace(browser, origin, viewport, when) {
   const synced = await page.$eval('#place-search', (input) => input.value);
   check(synced === 'Lancaster', `${when}: summary search box did not follow the nav popover: "${synced}"`);
 
-  // Back at the top, the control retires rather than sitting beside the real one.
+  // The selected name stays available when returning to the top.
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForFunction(
-    () => document.querySelector('#nav-place')?.getClientRects().length === 0,
+    () => document.querySelector('#nav-place')?.getClientRects().length > 0,
     { timeout: 5000 },
   );
   check(await shown('#status-chip'), `${when}: status chip never came back at the top of the page`);
-  notes.push(`${when}: nav control revealed on scroll, selected ${after}, hidden again at the top`);
+  notes.push(`${when}: location trigger selected ${after} and stayed available at the top`);
 
   check(errors.length === 0, `${when}: console errors from the nav control: ${errors.slice(0, 3).join(' | ')}`);
+  await page.close();
+}
+
+/** The comparison card speaks about the second place, not the main selection. */
+async function comparisonDirection(browser, origin) {
+  const { page, errors } = await open(browser, origin, '/del-rey', { width: 1024, height: 900 });
+  for (const [mine, theirs, expected] of [
+    [78, 82, '4° warmer'],
+    [82, 78, '4° cooler'],
+    [78.1, 78.4, 'About the same'],
+  ]) {
+    await page.evaluate(({ mine, theirs }) => {
+      const { bundle, store } = window.feelslike;
+      store.update({ comparison: null });
+      const hour = store.current.hour;
+      bundle.cells.get(store.current.selection.cellId).apparent_temperature_f[hour] = mine;
+      const other = bundle.placeCells.places['elysian-park'].cell_id;
+      bundle.cells.get(other).apparent_temperature_f[hour] = theirs;
+    }, { mine, theirs });
+    await page.click('.suggestion[data-slug="elysian-park"]');
+    const text = await page.$eval('.compare-result-diff', (node) => node.textContent.trim());
+    check(text.startsWith(expected) && text.includes('Del Rey'), `comparison direction: ${text}, expected ${expected} relative to Del Rey`);
+    check(await page.$eval('.compare-result-temp', (node) => node.textContent.trim()) === `${Math.round(theirs)}°`, 'comparison temperature does not match its subject');
+    check(await page.$eval('.suggestions', (node) => node.getClientRects().length === 0), 'suggestions remain visible with an active comparison');
+    await page.click('#compare-remove');
+    check(await page.$eval('.suggestions', (node) => node.getClientRects().length > 0), 'removing comparison did not restore suggestions');
+  }
+  check(errors.length === 0, `comparison console errors: ${errors.join(' | ')}`);
+  notes.push('comparison card: warmer, cooler, equal rounded values, and suggestion visibility checked');
   await page.close();
 }
 

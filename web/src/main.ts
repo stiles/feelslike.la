@@ -292,28 +292,13 @@ function announce(message: string): void {
   if (status) status.textContent = message;
 }
 
-/**
- * The masthead's place control, which exists only while the summary panel's search box
- * is off screen.
- *
- * An earlier version of this lived here unconditionally and was a plain duplicate: the
- * masthead did not stick, so the real search box was always within a screen of it, and
- * opening the masthead's copy covered the box it was copying. What changed is that the
- * masthead sticks now, so there is a long stretch of page — the chart, the map, the
- * comparison table — where the search box is genuinely gone and the only way to change
- * place is to scroll back up and lose your spot. An IntersectionObserver watches the
- * search row and reveals the button exactly for that stretch. Two pickers are never
- * reachable at once.
- */
+/** Open the shared place search from the location name in the sticky masthead. */
 function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => void): void {
-  const masthead = document.querySelector('.masthead') as HTMLElement;
   const button = document.querySelector('#nav-place') as HTMLButtonElement;
-  const chip = document.querySelector('#status-chip') as HTMLElement;
-  // Built by createHero(), which has already run by the time this is wired.
-  const finder = document.querySelector('.finder') as HTMLElement;
 
   const popover = document.createElement('div');
   popover.className = 'nav-popover';
+  popover.id = 'nav-popover';
   popover.hidden = true;
   document.body.append(popover);
 
@@ -326,13 +311,7 @@ function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => 
   }
 
   function open(): void {
-    const rect = button.getBoundingClientRect();
-    // Right-aligned to the button and then pulled back inside the viewport. The button
-    // sits at the right edge of the strip, so a panel hung from its left corner would
-    // run off the screen on a phone.
-    const width = Math.min(300, window.innerWidth - 16);
-    popover.style.top = `${rect.bottom + 8}px`;
-    popover.style.left = `${Math.max(8, rect.right - width)}px`;
+    position();
     // Rebuilt on every open rather than kept between them. Its one job is "here's the
     // place you're looking at, type to replace it," and a list left over from the last
     // open would say otherwise.
@@ -353,23 +332,24 @@ function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => 
     picker.focus();
   }
 
-  // The masthead covers the top of the viewport, so an element scrolled underneath it
-  // still counts as intersecting. Shrinking the observer's root by the strip's own
-  // height is what makes "hidden behind the masthead" mean gone. Measured once: the
-  // strip grows by a line for the three longest place names, which moves the reveal
-  // point by about 20px on a page thousands of pixels tall.
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-      const gone = entry ? !entry.isIntersecting : false;
-      button.hidden = !gone;
-      chip.hidden = gone;
-      // Scrolling the real search box back into view retires this one mid-use rather
-      // than leaving a panel hanging over a control that can now do the same job.
-      if (!gone) close();
-    },
-    { rootMargin: `-${masthead.offsetHeight}px 0px 0px 0px` },
-  );
-  observer.observe(finder);
+  function position(): void {
+    const rect = button.getBoundingClientRect();
+    const width = Math.min(300, window.innerWidth - 16);
+    popover.style.top = `${rect.bottom + 8}px`;
+    popover.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
+  }
+
+  window.addEventListener('resize', () => {
+    if (!popover.hidden) position();
+  });
+  window.addEventListener('scroll', () => {
+    if (!popover.hidden) position();
+  }, { passive: true });
+  popover.addEventListener('focusout', () => {
+    window.setTimeout(() => {
+      if (!popover.contains(document.activeElement) && document.activeElement !== button) close();
+    }, 0);
+  });
 
   button.addEventListener('click', () => {
     if (popover.hidden) open();
@@ -393,27 +373,22 @@ function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => 
  * carrying a fixed brand name above a page that is about to say the same thing again in
  * the summary panel below it.
  *
- * A label, not a control. An earlier version made the place name a dropdown trigger,
- * which put a second place picker roughly 60 pixels above the one in the summary panel —
- * and, because the masthead does not stick, opening it covered the very box it
- * duplicated. Changing place happens in one place on this page.
- *
  * A standalone city drops the redundant "LA": Culver City and Beverly Hills are not Los
  * Angeles, so "Culver City LA Feels Like" would misname them. Neighborhoods and
  * unincorporated areas keep it, because "Del Rey Feels Like" on its own does not say
  * where Del Rey is.
  */
 function writeWordmark(bundle: Bundle, selection: Selection | null): void {
-  const wordmark = document.querySelector('#wordmark') as HTMLElement | null;
-  if (!wordmark) return;
+  const button = document.querySelector('#nav-place') as HTMLButtonElement | null;
+  const suffix = document.querySelector('#wordmark-suffix');
+  if (!button || !suffix) return;
   const place = selection?.slug ? bundle.places.get(selection.slug) : null;
-  const name = selection ? escape(selection.label) : null;
-  wordmark.innerHTML =
-    name === null
-      ? 'LA <strong>Feels Like</strong>'
-      : place?.source_type === 'standalone-city'
-        ? `<span class="wordmark-place">${name}</span> <strong>Feels Like</strong>`
-        : `<span class="wordmark-place">${name}</span> LA <strong>Feels Like</strong>`;
+  const name = selection?.label ?? 'LA';
+  button.textContent = name;
+  button.setAttribute('aria-label', `Change place: ${name}`);
+  suffix.innerHTML = selection && place?.source_type !== 'standalone-city'
+    ? ' LA <strong>Feels Like</strong>'
+    : ' <strong>Feels Like</strong>';
 }
 
 /**
@@ -447,7 +422,7 @@ function writeStatusChip(bundle: Bundle): void {
   if (!chip) return;
   const state = freshness(bundle.manifest);
   const reference = bundle.manifest.forecast_reference_times[0];
-  chip.textContent = state.state === 'current' ? 'Local forecast' : state.message;
+  chip.textContent = state.state === 'current' ? 'A hyperlocal forecast' : state.message;
   chip.title = reference
     ? `${state.message} Issued ${exactTimestamp(reference)}.`
     : state.message;

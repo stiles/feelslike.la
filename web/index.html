@@ -83,17 +83,8 @@
          .masthead-inner carries the same 1280px measure as <main>. -->
     <header class="masthead">
       <div class="masthead-inner">
-        <!-- Names the place on screen, not just the brand — see writeWordmark() in
-             main.ts. "LA Feels Like" until a place resolves, then "Downtown LA Feels
-             Like" or, for a standalone city like Culver City, "Culver City Feels Like"
-             with no redundant "LA." A label, never a control. -->
-        <p class="wordmark" id="wordmark">LA <strong>Feels Like</strong></p>
-        <!-- Hidden until the summary panel's search box scrolls out of view, and it
-             takes the status chip's place rather than crowding in beside it — see
-             wireNavPlace() in main.ts. -->
-        <button class="nav-place" id="nav-place" type="button" hidden aria-expanded="false">
-          Change place
-        </button>
+        <!-- The location name doubles as the place picker trigger. -->
+        <p class="wordmark" id="wordmark"><button class="wordmark-place" id="nav-place" type="button" aria-expanded="false" aria-controls="nav-popover" aria-label="Change place: LA">LA</button><span id="wordmark-suffix"> <strong>Feels Like</strong></span></p>
         <p class="status-chip" id="status-chip" role="status"></p>
       </div>
     </header>
