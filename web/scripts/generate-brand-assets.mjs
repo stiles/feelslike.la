@@ -417,7 +417,7 @@ function conceptMapPortrait() {
       <div class="card map-portrait">
         <div class="topline">
           <div class="brand">Feels Like <strong>LA</strong></div>
-          <div class="kicker">A hyperlocal forecast</div>
+          <div class="kicker"></div>
         </div>
         <div class="content">
           <div class="copy">

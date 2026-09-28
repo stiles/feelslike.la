@@ -422,7 +422,7 @@ function writeStatusChip(bundle: Bundle): void {
   if (!chip) return;
   const state = freshness(bundle.manifest);
   const reference = bundle.manifest.forecast_reference_times[0];
-  chip.textContent = state.state === 'current' ? 'A hyperlocal forecast' : state.message;
+  chip.textContent = state.state === 'current' ? '' : state.message;
   chip.title = reference
     ? `${state.message} Issued ${exactTimestamp(reference)}.`
     : state.message;
