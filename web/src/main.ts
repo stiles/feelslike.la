@@ -15,7 +15,7 @@ import { FrameStore, loadBundle, loadCounty, loadOutlines } from './data';
 import { escape, exactTimestamp, freshness, weekdayHour } from './format';
 import { createHero } from './hero';
 import { CellLookup, resolveCoordinate, resolvePlace } from './lookup';
-import { createPicker, type Picker } from './picker';
+import { createPicker, createPlaceMenu, type Picker } from './picker';
 import { createSlider } from './slider';
 import {
   comparisonFromUrl,
@@ -292,7 +292,7 @@ function announce(message: string): void {
   if (status) status.textContent = message;
 }
 
-/** Open the shared place search from the location name in the sticky masthead. */
+/** Open the browseable place menu from the location name in the sticky masthead. */
 function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => void): void {
   const button = document.querySelector('#nav-place') as HTMLButtonElement;
 
@@ -312,14 +312,11 @@ function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => 
 
   function open(): void {
     position();
-    // Rebuilt on every open rather than kept between them. Its one job is "here's the
-    // place you're looking at, type to replace it," and a list left over from the last
-    // open would say otherwise.
-    const picker = createPicker(popover, {
+    // Rebuild so the current place marker always reflects the latest selection.
+    const menu = createPlaceMenu(popover, {
       id: 'nav-search',
-      label: 'Find a place',
-      placeholder: 'Santa Monica, Venice...',
       places: bundle.ordered,
+      currentSlug: store.current.selection?.slug ?? null,
       onSelect: (slug) => {
         onSelect(slug);
         close({ restoreFocus: true });
@@ -327,14 +324,12 @@ function wireNavPlace(bundle: Bundle, store: Store, onSelect: (slug: string) => 
     });
     popover.hidden = false;
     button.setAttribute('aria-expanded', 'true');
-    const current = store.current.selection?.label;
-    if (current) picker.setValue(current);
-    picker.focus();
+    menu.focus();
   }
 
   function position(): void {
     const rect = button.getBoundingClientRect();
-    const width = Math.min(300, window.innerWidth - 16);
+    const width = Math.min(340, window.innerWidth - 16);
     popover.style.top = `${rect.bottom + 8}px`;
     popover.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`;
   }

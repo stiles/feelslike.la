@@ -14,6 +14,10 @@ export interface Picker {
   focus(): void;
 }
 
+export interface PlaceMenu {
+  focus(): void;
+}
+
 interface Options {
   id: string;
   label: string;
@@ -22,6 +26,120 @@ interface Options {
   onSelect: (slug: string) => void;
   onClear?: () => void;
   clearLabel?: string;
+}
+
+interface MenuOptions {
+  id: string;
+  places: Place[];
+  currentSlug: string | null;
+  onSelect: (slug: string) => void;
+}
+
+/**
+ * The masthead's place menu. Unlike the task-oriented picker used in the forecast
+ * panel, this opens as a browseable A–Z list and uses its input only to narrow it.
+ */
+export function createPlaceMenu(root: HTMLElement, options: MenuOptions): PlaceMenu {
+  const sorted = [...options.places].sort((a, b) => a.name.localeCompare(b.name));
+  const listId = `${options.id}-list`;
+
+  root.innerHTML = `
+    <div class="nav-menu">
+      <label class="visually-hidden" for="${options.id}">Search places</label>
+      <div class="nav-menu-search">
+        <span class="nav-menu-search-icon" aria-hidden="true"></span>
+        <input
+          type="search"
+          id="${options.id}"
+          class="nav-menu-input"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Search places"
+          aria-controls="${listId}"
+        />
+      </div>
+      <p class="nav-menu-summary" aria-live="polite"></p>
+      <ul class="nav-menu-list" id="${listId}"></ul>
+    </div>
+  `;
+
+  const input = root.querySelector(`#${options.id}`) as HTMLInputElement;
+  const list = root.querySelector(`#${listId}`) as HTMLUListElement;
+  const summary = root.querySelector('.nav-menu-summary') as HTMLElement;
+
+  function render(query = ''): void {
+    const needle = query.trim().toLowerCase();
+    const matches = needle
+      ? sorted.filter((place) =>
+          [place.name, place.slug, ...place.aliases].some((value) =>
+            value.toLowerCase().includes(needle),
+          ),
+        )
+      : sorted;
+
+    summary.textContent = needle
+      ? `${matches.length} match${matches.length === 1 ? '' : 'es'}`
+      : `${matches.length} places`;
+
+    if (!matches.length) {
+      list.innerHTML = `<li class="nav-menu-empty">No places match “${escape(query.trim())}”</li>`;
+      return;
+    }
+
+    list.innerHTML = matches
+      .map((place) => {
+        const current = place.slug === options.currentSlug;
+        return `
+          <li>
+            <button
+              type="button"
+              class="nav-menu-option"
+              data-slug="${escape(place.slug)}"
+              ${current ? 'aria-current="true"' : ''}
+            >
+              <span class="nav-menu-name">${escape(place.name)}</span>
+              <span class="nav-menu-meta">${escape(describe(place))}</span>
+            </button>
+          </li>
+        `;
+      })
+      .join('');
+  }
+
+  input.addEventListener('input', () => render(input.value));
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowDown') return;
+    const first = list.querySelector('.nav-menu-option') as HTMLButtonElement | null;
+    if (first) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  list.addEventListener('click', (event) => {
+    const option = (event.target as HTMLElement).closest(
+      '.nav-menu-option',
+    ) as HTMLButtonElement | null;
+    if (option?.dataset.slug) options.onSelect(option.dataset.slug);
+  });
+
+  list.addEventListener('keydown', (event) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    const buttons = [...list.querySelectorAll<HTMLButtonElement>('.nav-menu-option')];
+    const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (index < 0) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowDown' ? 1 : -1;
+    buttons[(index + direction + buttons.length) % buttons.length]?.focus();
+  });
+
+  render();
+  return {
+    focus() {
+      input.focus();
+    },
+  };
 }
 
 export function createPicker(root: HTMLElement, options: Options): Picker {
